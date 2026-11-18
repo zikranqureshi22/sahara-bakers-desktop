@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sahara Bakers — Godown Stock</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-theme="light">
+<div id="notice-stack" aria-live="polite"></div>
+
+<!-- Login overlay: shown when no user is logged in.
+     PIN login (Owner Rahmanullah, PIN 3333). -->
+<div id="login-screen" class="login-screen">
+  <div class="login-card">
+    <!-- Login-screen ⋮ menu: theme toggle + one-click restore from
+         backup, available BEFORE any login (the data-loss case has no
+         logins at all). -->
+    <div class="login-menu">
+      <button id="login-menu-btn" class="btn btn-ghost login-menu-btn" type="button" aria-label="Menu" title="Menu">⋮</button>
+      <div id="login-menu" class="login-menu-list" hidden>
+        <button id="login-theme-toggle" class="btn btn-ghost login-menu-item" type="button">Dark Theme</button>
+        <button id="login-restore-btn" class="btn btn-ghost login-menu-item" type="button">Backup se Data Wapas Layein</button>
+      </div>
+    </div>
+    <div class="login-logo">
+      <img id="login-logo-img" src="assets/sahara-logo.png" alt="Sahara Bakers" onerror="this.style.display='none'">
+      <div class="login-brand">SAHARA BAKERS</div>
+      <div class="login-sub">Godown Stock</div>
+    </div>
+    <div id="login-body"></div>
+  </div>
+</div>
+
+<!-- Confirm dialog -->
+<div id="confirm-overlay" class="confirm-overlay" hidden>
+  <div class="confirm-box">
+    <h3 id="confirm-title"></h3>
+    <p id="confirm-text"></p>
+    <div class="confirm-actions">
+      <button id="confirm-no" class="btn btn-ghost">Cancel</button>
+      <button id="confirm-yes" class="btn btn-danger">Confirm Karein</button>
+    </div>
+  </div>
+</div>
+
+<!-- Item form / history modal (shared by Items, Branches, Logins) -->
+<div id="item-form-overlay" class="bill-preview-overlay" hidden>
+  <div class="item-form-card">
+    <div class="bill-preview-head">
+      <h3 id="item-form-title">Item</h3>
+      <button id="item-form-x" class="btn btn-ghost" type="button" aria-label="Band Karein">×</button>
+    </div>
+    <div id="item-form-body"></div>
+  </div>
+</div>
+
+<!-- Bill preview modal: the bill is shown first, then printed.
+     The white 80mm card renders the same receiptHtml as printing, so the
+     preview is exactly what prints. -->
+<div id="bill-preview-overlay" class="bill-preview-overlay" hidden>
+  <div class="bill-preview-card">
+    <div class="bill-preview-head">
+      <h3>Bill Preview</h3>
+      <button id="bill-preview-x" class="btn btn-ghost" type="button" aria-label="Band Karein">×</button>
+    </div>
+    <div id="bill-preview-body" class="bill-preview-body"></div>
+    <div class="bill-preview-actions">
+      <button id="bill-preview-print" class="btn btn-primary" type="button">Bill Print Karein (80mm Thermal)</button>
+      <button id="bill-preview-close" class="btn" type="button">Band Karein</button>
+    </div>
+  </div>
+</div>
+
+<div id="app-shell" class="app-shell" hidden>
+  <header class="app-header">
+    <div class="header-brand">
+      <img id="header-logo-img" src="assets/sahara-logo.png" alt="Sahara Bakers logo" onerror="this.style.display='none'">
+      <span id="header-logo-text" class="header-logo-text">SAHARA BAKERS</span>
+      <span class="header-titles">
+        <span class="header-name">SAHARA BAKERS</span>
+        <span class="header-sub">Godown Stock</span>
+      </span>
+    </div>
+    <div class="header-right">
+      <select id="branch-select" class="input branch-select" title="Branch"></select>
+      <span id="net-badge" class="badge badge-offline">Offline — Local</span>
+      <button id="theme-toggle" class="btn btn-ghost" type="button" title="Dark / Light theme">Dark Theme</button>
+      <span id="user-chip" class="user-chip"></span>
+      <button id="logout-btn" class="btn btn-ghost" type="button">Lock / Logout</button>
+    </div>
+  </header>
+
+  <div class="app-body">
+    <nav id="sidebar" class="sidebar" aria-label="Main navigation"></nav>
+    <main id="screen" class="screen"></main>
+  </div>
+</div>
+
+<!-- Hidden 80mm thermal bill print area -->
+<div id="receipt-print" class="receipt-print"></div>
+
+<script src="src/ui.js"></script>
+<script src="src/dashboard.js"></script>
+<script src="src/items.js"></script>
+<script src="src/stock.js"></script>
+<script src="src/branches.js"></script>
+<script src="src/transfer-bill.js"></script>
+<script src="src/purchases.js"></script>
+<script src="src/logins.js"></script>
+<script src="src/settings.js"></script>
+<script>
+  // Renderer entry point. Screen modules register into window.Screens;
+  // App.go() falls back gracefully if one has not loaded yet.
+  window.App.init();
+</script>
+</body>
+</html>

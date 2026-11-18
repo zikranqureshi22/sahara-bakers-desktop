@@ -1,0 +1,303 @@
+/* Sahara Bakers — renderer styles (v1.0.0).
+ * Black & white theme: white background, black text/accents.
+ * Dark mode = inverted. Big fonts (base 17.5px, bill 15px).
+ * Simple and professional, minimal/no emoji.
+ * Fully offline: system fonts only, no CDN. */
+* { box-sizing: border-box; }
+/* A `hidden` element must stay hidden even when its class sets display:flex/grid. */
+[hidden] { display: none !important; }
+
+:root {
+  --accent: #000000;
+  --primary: #000000;
+  --primary-text: #ffffff;
+  --danger: #000000;
+  --danger-dark: #333333;
+  --radius: 12px;
+}
+/* Black & white — light (default): white background, black text. */
+body[data-theme="light"] {
+  --bg: #ffffff; --panel: #ffffff; --panel2: #f5f5f5; --panel3: #eeeeee;
+  --text: #000000; --muted: #555555; --border: #cccccc; --input-bg: #ffffff;
+  --header-bg: #ffffff; --sidebar-bg: #f5f5f5; --hover: #eeeeee; --shadow: rgba(0,0,0,.12);
+  --primary: #000000; --primary-text: #ffffff;
+}
+/* Dark mode = inverted: black background, white text. */
+body[data-theme="dark"] {
+  --bg: #000000; --panel: #111111; --panel2: #1c1c1c; --panel3: #262626;
+  --text: #ffffff; --muted: #bbbbbb; --border: #444444; --input-bg: #1c1c1c;
+  --header-bg: #111111; --sidebar-bg: #111111; --hover: #262626; --shadow: rgba(0,0,0,.5);
+  --primary: #ffffff; --primary-text: #000000;
+}
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 17.5px; line-height: 1.5; min-height: 100vh;
+}
+h1, h2, h3, h4 { margin: 0 0 10px; font-weight: 700; }
+h1 { font-size: 26px; } h2 { font-size: 22px; } h3 { font-size: 19px; }
+p { margin: 0 0 10px; }
+a { color: var(--text); }
+small, .muted { color: var(--muted); }
+
+/* ---------- Layout ---------- */
+.app-shell { height: 100vh; display: flex; flex-direction: column; position: relative; z-index: 2; }
+.app-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: var(--header-bg); border-bottom: 2px solid var(--text);
+  padding: 10px 16px; position: sticky; top: 0; z-index: 40; flex-wrap: wrap;
+}
+.header-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.header-brand img { height: 48px; width: 48px; object-fit: contain; border-radius: 50%; }
+.header-logo-text { display: none; font-size: 26px; font-weight: 800; letter-spacing: 4px; }
+.header-titles { display: flex; flex-direction: column; line-height: 1.1; }
+.header-name { font-size: 22px; font-weight: 800; letter-spacing: 3px; }
+.header-sub { font-size: 14px; color: var(--muted); letter-spacing: 1px; }
+.header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.user-chip { font-weight: 700; white-space: nowrap; }
+.app-body { display: flex; flex: 1; min-height: 0; }
+.sidebar {
+  width: 230px; flex: 0 0 230px; background: var(--sidebar-bg);
+  border-right: 1px solid var(--border); padding: 12px 8px;
+  display: flex; flex-direction: column; gap: 2px;
+  overflow-y: auto;
+}
+.sidebar button.nav-item {
+  display: block; width: 100%; text-align: left; background: none; border: none;
+  color: var(--text); padding: 12px 14px; border-radius: 8px; cursor: pointer;
+  font-size: 17.5px; font-family: inherit; font-weight: 600;
+}
+.sidebar button.nav-item:hover { background: var(--hover); }
+.sidebar button.nav-item.active { background: var(--primary); color: var(--primary-text); font-weight: 700; }
+.sidebar button.nav-item:disabled { opacity: .38; cursor: not-allowed; }
+.screen { flex: 1; padding: 18px; min-width: 0; overflow-x: auto; overflow-y: auto; }
+
+/* ---------- Cards / tables / forms ---------- */
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 16px; box-shadow: 0 2px 8px var(--shadow); }
+.card h2, .card h3 { margin-top: 0; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.stat { background: var(--panel); border: 2px solid var(--text); border-radius: var(--radius); padding: 16px; }
+.stat .stat-label { color: var(--muted); font-size: 15px; font-weight: 600; }
+.stat .stat-value { font-size: 28px; font-weight: 800; margin-top: 4px; }
+table { width: 100%; border-collapse: collapse; font-size: 16px; }
+th, td { text-align: left; padding: 10px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+th { color: var(--muted); font-size: 14px; text-transform: uppercase; letter-spacing: .5px; }
+tbody tr:hover { background: var(--hover); }
+.table-wrap { overflow-x: auto; }
+label { display: block; font-weight: 700; font-size: 15px; margin: 10px 0 4px; }
+.input, select.input, textarea.input {
+  width: 100%; padding: 12px 12px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--input-bg); color: var(--text); font-size: 17.5px; font-family: inherit;
+}
+.input:focus { outline: 3px solid var(--text); outline-offset: 0; }
+input[type="number"].input { text-align: right; }
+.form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0 14px; }
+.form-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-block; padding: 12px 18px; border-radius: 8px; border: 1px solid var(--text);
+  background: var(--panel2); color: var(--text); font-size: 17.5px; font-weight: 700;
+  cursor: pointer; font-family: inherit; text-decoration: none; white-space: nowrap;
+}
+.btn:hover { filter: brightness(1.08); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn-primary { background: var(--primary); border-color: var(--primary); color: var(--primary-text); }
+.btn-danger { background: #000; border-color: #000; color: #fff; }
+body[data-theme="dark"] .btn-danger { background: #fff; border-color: #fff; color: #000; }
+.btn-ghost { background: transparent; }
+.btn-sm { padding: 7px 12px; font-size: 15px; }
+.btn-block { width: 100%; text-align: center; }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+/* ---------- Badges ---------- */
+.badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 14px; font-weight: 700; white-space: nowrap; border: 1px solid var(--text); }
+.badge-online { background: #000; color: #fff; }
+body[data-theme="dark"] .badge-online { background: #fff; color: #000; }
+.badge-offline { background: transparent; color: var(--text); }
+.warning-banner {
+  background: var(--panel); color: var(--text); border: 3px solid var(--text);
+  border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px; font-weight: 600;
+}
+.low-tag { font-weight: 800; border: 2px solid var(--text); border-radius: 6px; padding: 1px 7px; font-size: 14px; white-space: nowrap; }
+tr.low-row td { border-top: 3px solid var(--text); border-bottom: 3px solid var(--text); font-weight: 700; }
+tr.low-row td:first-child { border-left: 3px solid var(--text); }
+tr.low-row td:last-child { border-right: 3px solid var(--text); }
+tr.low-note-row td { font-weight: 700; border-bottom: 3px solid var(--text); }
+.product-card.low-stock { border: 3px solid var(--text); }
+.confirm-box-inline { background: var(--panel2); border: 2px solid var(--text); border-radius: 8px; padding: 12px; margin-top: 12px; }
+
+/* ---------- Notices (5s auto-dismiss with countdown line) ---------- */
+/* Success = black notice ("Ho Gaya ✓"); issue = white notice with a
+   thick black border ("Issue — …"). Every notice has a 5-second
+   countdown line at its bottom that drains over 5s, then the notice
+   auto-dismisses; × closes it early. */
+#notice-stack {
+  position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+  z-index: 200; display: flex; flex-direction: column; gap: 8px;
+  width: min(560px, calc(100vw - 24px)); pointer-events: none;
+}
+.notice {
+  pointer-events: auto; background: var(--panel); color: var(--text);
+  border: 1px solid var(--border); border-left: 5px solid var(--text);
+  border-radius: 8px; padding: 13px 38px 13px 15px; position: relative;
+  box-shadow: 0 4px 16px var(--shadow); overflow: hidden; font-weight: 700;
+  font-size: 17.5px;
+}
+.notice-success { background: #000; color: #fff; border: 1px solid #000; }
+body[data-theme="dark"] .notice-success { background: #fff; color: #000; border: 1px solid #fff; }
+.notice-error { background: #fff; color: #000; border: 3px solid #000; }
+body[data-theme="dark"] .notice-error { background: #000; color: #fff; border: 3px solid #fff; }
+.notice-warning { border: 3px solid var(--text); }
+.notice-info { border-left: 5px solid var(--text); }
+.notice .notice-x {
+  position: absolute; top: 8px; right: 10px; background: none; border: none;
+  color: inherit; font-size: 20px; cursor: pointer; padding: 2px 6px; line-height: 1;
+}
+.notice .notice-bar {
+  position: absolute; left: 0; bottom: 0; height: 4px; background: var(--text);
+  animation: notice-countdown 5s linear forwards;
+}
+.notice-success .notice-bar { background: #fff; }
+body[data-theme="dark"] .notice-success .notice-bar { background: #000; }
+.notice-error .notice-bar { background: #000; }
+body[data-theme="dark"] .notice-error .notice-bar { background: #fff; }
+@keyframes notice-countdown { from { width: 100%; } to { width: 0%; } }
+
+/* ---------- Login ---------- */
+.login-screen {
+  position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
+  background: var(--bg); padding: 16px; overflow-y: auto;
+}
+.login-card {
+  position: relative;
+  width: min(460px, 100%); background: var(--panel); border: 2px solid var(--text);
+  border-radius: 14px; padding: 28px 24px; box-shadow: 0 8px 32px var(--shadow); text-align: center;
+}
+.login-logo img { height: 110px; width: 110px; object-fit: contain; border-radius: 50%; }
+.login-brand { font-size: 30px; font-weight: 800; letter-spacing: 4px; margin-top: 8px; }
+.login-sub { color: var(--muted); letter-spacing: 2px; font-size: 15px; margin-bottom: 18px; }
+.login-card form { text-align: left; }
+.login-user-list { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+.login-user-btn { text-align: left; }
+.login-user-btn.selected { border-color: var(--text); outline: 3px solid var(--text); }
+.pin-input { font-size: 24px; letter-spacing: 8px; text-align: center; }
+
+/* ---------- Login-screen ⋮ menu ---------- */
+.login-menu { position: absolute; top: 10px; right: 10px; z-index: 5; }
+.login-menu-btn { font-size: 24px; line-height: 1; padding: 2px 10px; }
+.login-menu-list { position: absolute; top: 42px; right: 0; background: var(--panel); border: 2px solid var(--text); border-radius: 10px; box-shadow: 0 8px 24px var(--shadow); min-width: 250px; padding: 6px; display: flex; flex-direction: column; gap: 4px; }
+.login-menu-item { text-align: left; }
+
+/* ---------- Confirm dialog ---------- */
+.confirm-overlay {
+  position: fixed; inset: 0; z-index: 150; background: rgba(0,0,0,.55);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.confirm-box { background: var(--panel); border: 2px solid var(--text); border-radius: 12px; padding: 22px; width: min(440px, 100%); }
+.confirm-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+
+/* ---------- Product cards ---------- */
+.pos-search-row { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.pos-search-row .input { flex: 1; min-width: 180px; }
+.product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+.product-card {
+  background: var(--panel2); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 10px; cursor: pointer; text-align: center;
+}
+.product-card:hover { border: 2px solid var(--text); }
+.product-card img { width: 100%; height: 130px; object-fit: contain; background: #fff; border-radius: 6px; }
+.product-ph { width: 100%; height: 130px; border-radius: 6px; background: var(--panel3); display: flex; align-items: center; justify-content: center; font-weight: 700; padding: 8px; text-align: center; }
+.product-card .p-name { font-weight: 700; margin-top: 8px; font-size: 16px; }
+.product-card .p-price { font-weight: 800; font-size: 17.5px; }
+.product-card .p-stock { font-size: 14px; color: var(--muted); }
+.product-card.out { opacity: .55; }
+.thumb { width: 52px; height: 52px; object-fit: contain; background: #fff; border-radius: 6px; }
+.thumb-ph { width: 52px; height: 52px; border-radius: 6px; background: var(--panel3); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; text-align: center; overflow: hidden; }
+
+/* ---------- Bill print (80mm thermal, black on white) ---------- */
+/* @page MUST stay top-level: Chromium ignores @page nested inside @media print.
+   No @page size is set on purpose for the window.print() FALLBACK path:
+   the dialog then uses the printer's own stock. The primary thermal path
+   does not use @page at all: main.js prints with Electron's pageSize
+   option at the measured bill height (see src/ui.js printReceiptHtml). */
+@page { margin: 0; }
+.receipt-print { display: none; }
+@media print {
+  body > :not(#receipt-print) { display: none !important; }
+  #receipt-print { display: block !important; position: absolute; left: 0; top: 0; width: 80mm; }
+  body { background: #fff !important; }
+}
+#receipt-print {
+  color: #000; background: #fff; font-family: "Courier New", monospace; font-size: 15px; font-weight: 700; line-height: 1.5;
+}
+#receipt-print .r-center { text-align: center; }
+#receipt-print .r-bold { font-weight: 700; }
+#receipt-print .r-logo { width: 40mm; max-width: 100%; display: block; margin: 0 auto 2px; border-radius: 50%; }
+#receipt-print .r-line { border-top: 1px dashed #000; margin: 6px 0; }
+#receipt-print table { width: 100%; border-collapse: collapse; font-size: 15px; }
+#receipt-print td, #receipt-print th { border: none; padding: 2px 0; color: #000; text-align: left; }
+#receipt-print td.r-right, #receipt-print th.r-right { text-align: right; }
+
+/* ---------- Bill preview modal ---------- */
+/* Shown automatically after a transfer and from Transfer History > Bill.
+   The white 80mm card renders the same receiptHtml as printing, so the
+   preview is exactly what prints. z-index 120 sits above the app shell
+   (2) and login screen (100) but below the confirm dialog (150) and the
+   notice stack (200), so print notices stay visible over the modal.
+   In print media the overlay is hidden by the @media print rule above
+   (only #receipt-print prints). */
+.bill-preview-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.65); display: flex; align-items: flex-start; justify-content: center; padding: 28px 12px; z-index: 120; overflow-y: auto; }
+.bill-preview-overlay[hidden] { display: none !important; }
+.bill-preview-card { background: #fff; color: #000; width: 80mm; max-width: calc(100vw - 24px); border-radius: 10px; padding: 14px 14px 12px; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+.item-form-card { background: var(--panel); color: var(--text); width: min(640px, calc(100vw - 24px)); border-radius: 10px; padding: 18px; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+.bill-preview-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.bill-preview-head h3 { margin: 0; }
+.bill-preview-body { font-family: "Courier New", monospace; font-size: 15px; font-weight: 700; line-height: 1.5; color: #000; }
+.bill-preview-body .r-center { text-align: center; }
+.bill-preview-body .r-bold { font-weight: 700; }
+.bill-preview-body .r-logo { width: 40mm; max-width: 100%; display: block; margin: 0 auto 2px; border-radius: 50%; }
+.bill-preview-body .r-line { border-top: 1px dashed #000; margin: 6px 0; }
+.bill-preview-body table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.bill-preview-body td, .bill-preview-body th { border: none; padding: 2px 0; color: #000; text-align: left; }
+.bill-preview-body td.r-right, .bill-preview-body th.r-right { text-align: right; }
+.bill-preview-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px; flex-wrap: wrap; }
+
+/* ---------- Misc ---------- */
+.toolbar { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 14px; }
+.toolbar .field { flex: 1; min-width: 160px; }
+.toolbar .field label { margin-top: 0; }
+.screen-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.screen-head h1 { margin: 0; }
+.hidden { display: none !important; }
+
+/* ---------- Responsive layout ---------- */
+@media (max-width: 1180px) {
+  .sidebar { width: 190px; flex-basis: 190px; }
+  .screen { padding: 14px; }
+}
+@media (max-width: 1024px) {
+  .sidebar { width: 170px; flex-basis: 170px; }
+  .sidebar button.nav-item { font-size: 16px; padding: 10px 12px; }
+  .product-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  h1 { font-size: 22px; }
+}
+@media (max-width: 900px) {
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  .app-body { flex-direction: column; }
+  .sidebar {
+    width: 100%; flex: none; flex-direction: row; overflow-x: auto;
+    border-right: none; border-bottom: 1px solid var(--border); padding: 8px;
+  }
+  .sidebar button.nav-item { width: auto; white-space: nowrap; }
+}
+@media (max-width: 760px) {
+  .screen { padding: 12px; }
+  .header-name { font-size: 18px; }
+  .header-brand img { height: 40px; width: 40px; }
+  .product-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+  .product-card img { height: 100px; }
+}
