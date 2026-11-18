@@ -1,0 +1,1335 @@
+{
+  "_note": "Sahara Bakers v1.0.0 first-run seed — from live web-app export 2026-11-17. All prices blank (null); the user enters them in-app. Owner PIN 3333 (hashed, sha256 3333:sahara-bakers-salt).",
+  "products": [
+    {
+      "id": 12,
+      "name": "Ghee",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Bakery Raw Materials",
+      "type": "raw",
+      "unit": "Liter",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/12-ghee.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "name": "Sugar",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Sugar",
+      "type": "raw",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/13-sugar.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "name": "Eggs",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Eggs",
+      "type": "raw",
+      "unit": "Pieces",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/14-eggs.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "name": "Flour",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Flour",
+      "type": "raw",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/15-flour.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "name": "Dry Fruit",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Bakery Raw Materials",
+      "type": "raw",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/16-dry-fruit.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "name": "Butter",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Butter",
+      "type": "raw",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/17-butter.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "name": "Cheese",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Bakery Raw Materials",
+      "type": "raw",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/18-cheese.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "name": "Sooji (Semolina)",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Bakery Raw Materials",
+      "type": "raw",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/19-sooji-semolina.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "name": "Chocolate Syrup",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Chocolate",
+      "type": "raw",
+      "unit": "Liter",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/20-chocolate-syrup.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "name": "Cocoa Powder",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Chocolate",
+      "type": "raw",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/21-cocoa-powder.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "name": "Egg Powder",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Bakery Raw Materials",
+      "type": "raw",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/22-egg-powder.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "name": "Baking Powder",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Bakery Raw Materials",
+      "type": "raw",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/23-baking-powder.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "name": "Baking Soda",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Bakery Raw Materials",
+      "type": "raw",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/24-baking-soda.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "name": "Glucose",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Bakery Raw Materials",
+      "type": "raw",
+      "unit": "Liter",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/25-glucose.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "name": "Cream",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Cream",
+      "type": "raw",
+      "unit": "Liter",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/26-cream.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "name": "Cream Cheese",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Cream",
+      "type": "raw",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/27-cream-cheese.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "name": "Oil",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Bakery Raw Materials",
+      "type": "raw",
+      "unit": "Liter",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/28-oil.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "name": "Cherry",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Bakery Raw Materials",
+      "type": "raw",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/29-cherry.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "name": "Jelly",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Bakery Raw Materials",
+      "type": "raw",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/30-jelly.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "name": "Dry Milk (Khushk Dudh)",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Bakery Raw Materials",
+      "type": "raw",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/31-dry-milk.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "name": "Fresh Milk (Taza Dudh)",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Bakery Raw Materials",
+      "type": "raw",
+      "unit": "Liter",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/32-fresh-milk.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "name": "Khoya (Koya)",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Bakery Raw Materials",
+      "type": "raw",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/33-khoya.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "name": "Copra (Kopra)",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Bakery Raw Materials",
+      "type": "raw",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/34-copra.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 35,
+      "name": "Plastic Bag",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Packaging",
+      "type": "raw",
+      "unit": "Pieces",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/35-plastic-bag.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 36,
+      "name": "Cornflour",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Bakery Raw Materials",
+      "type": "raw",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/36-cornflour.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 37,
+      "name": "Custard",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Bakery Raw Materials",
+      "type": "raw",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/37-custard.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 38,
+      "name": "Kheer Mix",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Bakery Raw Materials",
+      "type": "raw",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/38-kheer-mix.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 39,
+      "name": "Angoori (Grapes)",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Bakery Raw Materials",
+      "type": "raw",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/39-angoori-grapes.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 40,
+      "name": "Gulab Jamun",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Finished Bakery Products",
+      "type": "finished",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/40-gulab-jamun.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 41,
+      "name": "Rasgulla",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Finished Bakery Products",
+      "type": "finished",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/41-rasgulla.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 42,
+      "name": "Barfi",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Finished Bakery Products",
+      "type": "finished",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/42-barfi.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 43,
+      "name": "Sugarfree Patisa",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Finished Bakery Products",
+      "type": "finished",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/43-sugarfree-patisa.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 44,
+      "name": "Sugarfree Barfi",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Finished Bakery Products",
+      "type": "finished",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/44-sugarfree-barfi.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 45,
+      "name": "Sohan Halwa",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Finished Bakery Products",
+      "type": "finished",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/45-sohan-halwa.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 46,
+      "name": "Sugarfree Sohan Halwa",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Finished Bakery Products",
+      "type": "finished",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/46-sugarfree-sohan-halwa.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 47,
+      "name": "Chocolate Sohan Halwa",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Finished Bakery Products",
+      "type": "finished",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/47-chocolate-sohan-halwa.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 48,
+      "name": "Rasmalai",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Finished Bakery Products",
+      "type": "finished",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/48-rasmalai.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 49,
+      "name": "Three Milky Cake",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Finished Bakery Products",
+      "type": "finished",
+      "unit": "Pieces",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/49-three-milky-cake.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 50,
+      "name": "Fancy Biscuit",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Finished Bakery Products",
+      "type": "finished",
+      "unit": "Pieces",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/50-fancy-biscuit.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 51,
+      "name": "Sada Biscuit",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Finished Bakery Products",
+      "type": "finished",
+      "unit": "Pieces",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/51-sada-biscuit.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 52,
+      "name": "Double Roti",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Finished Bakery Products",
+      "type": "finished",
+      "unit": "Pieces",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/52-double-roti.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 53,
+      "name": "Cake Rusk",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Finished Bakery Products",
+      "type": "finished",
+      "unit": "Pieces",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/53-cake-rusk.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 54,
+      "name": "Cake Piece",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Finished Bakery Products",
+      "type": "finished",
+      "unit": "Pieces",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/54-cake-piece.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 55,
+      "name": "Bakery Cake",
+      "price": null,
+      "purchasePrice": null,
+      "category": "Finished Bakery Products",
+      "type": "finished",
+      "unit": "Pieces",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/55-bakery-cake.jpg",
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": 1,
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    }
+  ],
+  "branches": [
+    {
+      "id": 1,
+      "name": "sahara backers railway road",
+      "address": "sahara backers main railway road",
+      "contact": "",
+      "manager": ""
+    },
+    {
+      "id": 2,
+      "name": "TEHZEEB CAFE",
+      "address": "",
+      "contact": "",
+      "manager": ""
+    },
+    {
+      "id": 3,
+      "name": "Branch 3",
+      "address": "",
+      "contact": "",
+      "manager": ""
+    }
+  ],
+  "stockMovements": [],
+  "transfers": [],
+  "purchases": [],
+  "purchaseLines": [],
+  "suppliers": [],
+  "appUsers": [
+    {
+      "id": 1,
+      "name": "Rahmanullah",
+      "username": "rahmanullah",
+      "pinHash": "3aff3fa99ef649345f1540a796bac5e4bcab4ba465ca703df90bf534afca884e",
+      "role": "Owner",
+      "branchId": null,
+      "branchName": null,
+      "isActive": true
+    }
+  ],
+  "loginSecurity": {},
+  "settings": {
+    "businessName": "Sahara Bakers",
+    "address": "",
+    "phone": "",
+    "currency": "PKR",
+    "defaultBranchId": 1,
+    "allowNegativeStock": false,
+    "sessionTimeoutMinutes": 15,
+    "printerName": "",
+    "lowStockNotifications": true,
+    "defaultLowStockLimit": null,
+    "v100FreshSeedApplied": true
+  }
+}
