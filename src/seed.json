@@ -1,5 +1,5 @@
 {
-  "_note": "Sahara Bakers v1.0.0 first-run seed — from live web-app export 2026-11-17. All prices blank (null); the user enters them in-app. Owner PIN 3333 (hashed, sha256 3333:sahara-bakers-salt).",
+  "_note": "Sahara Bakers v2.0.0 first-run seed — from live web-app backup 2026-11-19. Branches Branch 1/2/3, plus a separate Warehouse location (branchStocks branchId \"warehouse\"). Owner PIN 1234 (Rahmanullah), Manager PIN 123 (hashed, sha256 pin:sahara-bakers-salt). Prices: only Cheese Rs 8000/5000 and Bakery Cake Rs 9000/7000 (user-entered, from live backup); all other 42 items null — user enters them in-app.",
   "products": [
     {
       "id": 12,
@@ -17,7 +17,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -46,7 +46,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -75,7 +75,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -104,7 +104,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -133,7 +133,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -162,7 +162,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -178,11 +178,11 @@
     {
       "id": 18,
       "name": "Cheese",
-      "price": null,
-      "purchasePrice": null,
+      "price": 8000,
+      "purchasePrice": 5000,
       "category": "Bakery Raw Materials",
       "type": "raw",
-      "unit": "Kg",
+      "unit": "1 Kg",
       "sku": null,
       "barcode": null,
       "lowThreshold": null,
@@ -191,7 +191,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -220,7 +220,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -249,7 +249,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -278,7 +278,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -307,7 +307,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -336,7 +336,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -365,7 +365,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -394,7 +394,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -423,7 +423,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -452,7 +452,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -481,7 +481,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -510,7 +510,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -539,7 +539,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -568,7 +568,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -597,7 +597,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -626,7 +626,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -655,7 +655,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -684,7 +684,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -713,7 +713,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -742,7 +742,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -771,7 +771,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -800,7 +800,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -829,7 +829,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -858,7 +858,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -887,7 +887,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -916,7 +916,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -945,7 +945,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -974,7 +974,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -1003,7 +1003,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -1032,7 +1032,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -1061,7 +1061,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -1090,7 +1090,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -1119,7 +1119,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -1148,7 +1148,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -1177,7 +1177,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -1206,7 +1206,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -1235,7 +1235,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -1251,11 +1251,11 @@
     {
       "id": 55,
       "name": "Bakery Cake",
-      "price": null,
-      "purchasePrice": null,
+      "price": 9000,
+      "purchasePrice": 7000,
       "category": "Finished Bakery Products",
       "type": "finished",
-      "unit": "Pieces",
+      "unit": "10 Pieces",
       "sku": null,
       "barcode": null,
       "lowThreshold": null,
@@ -1264,7 +1264,7 @@
       "stock": 0,
       "branchStocks": [
         {
-          "branchId": 1,
+          "branchId": "warehouse",
           "qty": 0
         },
         {
@@ -1281,14 +1281,14 @@
   "branches": [
     {
       "id": 1,
-      "name": "sahara backers railway road",
-      "address": "sahara backers main railway road",
+      "name": "Branch 1",
+      "address": "",
       "contact": "",
       "manager": ""
     },
     {
       "id": 2,
-      "name": "TEHZEEB CAFE",
+      "name": "Branch 2",
       "address": "",
       "contact": "",
       "manager": ""
@@ -1303,6 +1303,7 @@
   ],
   "stockMovements": [],
   "transfers": [],
+  "productions": [],
   "purchases": [],
   "purchaseLines": [],
   "suppliers": [],
@@ -1311,8 +1312,18 @@
       "id": 1,
       "name": "Rahmanullah",
       "username": "rahmanullah",
-      "pinHash": "3aff3fa99ef649345f1540a796bac5e4bcab4ba465ca703df90bf534afca884e",
+      "pinHash": "59a52044930fc8ebb17b69c7733f2b5ad37d5758c3a574c0a36a70d3bea06f9e",
       "role": "Owner",
+      "branchId": null,
+      "branchName": null,
+      "isActive": true
+    },
+    {
+      "id": 2,
+      "name": "Manager",
+      "username": "manager",
+      "pinHash": "11908e709ed39a955bc8a3d448b736f344d873aedb5a02dabcf0693a6ec64065",
+      "role": "Manager",
       "branchId": null,
       "branchName": null,
       "isActive": true
@@ -1330,6 +1341,8 @@
     "printerName": "",
     "lowStockNotifications": true,
     "defaultLowStockLimit": null,
-    "v100FreshSeedApplied": true
+    "v100FreshSeedApplied": true,
+    "v200SeedMigrated": true,
+    "v201WarehouseMigrated": true
   }
 }

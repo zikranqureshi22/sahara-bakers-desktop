@@ -1,4 +1,4 @@
-/* Sahara Bakers — Items (v1.0.0).
+/* Sahara Bakers — Items (v2.0.0).
  * Two professional categories: "Raw Materials" (28) / "Finished Goods"
  * (16). Search bar placeholder "Search Item". The WHOLE product card
  * is clickable — it opens that item's Stock In sheet (see stock.js).

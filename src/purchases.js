@@ -1,8 +1,7 @@
-/* Sahara Bakers — Purchases (v1.0.0).
+/* Sahara Bakers — Purchases (v2.0.0).
  * Unique invoice number (duplicates rejected with a notice), supplier,
- * lines, auto stock-in on save. The purchase lands in the godown
- * (Warehouse, branch 1) unless another branch is picked. Wrapped in
- * an IIFE.
+ * lines, auto stock-in on save. The purchase lands in the Warehouse
+ * unless another branch is picked. Wrapped in an IIFE.
  */
 (function () {
 'use strict';
@@ -22,7 +21,6 @@ function renderPurchases(container) {
   const st = S();
   const products = st.products || [];
   const branches = st.branches || [];
-  const warehouseId = window.App.warehouseBranchId();
 
   const wrap = el('<div></div>');
   wrap.appendChild(el('<div class="screen-head"><h1>Purchases</h1></div>'));
@@ -32,8 +30,8 @@ function renderPurchases(container) {
   const form = el('<form></form>');
   const invIn = el('<input class="input" type="text" required placeholder="Invoice number (unique — jaise INV-001)">');
   const supplierIn = el('<input class="input" type="text" placeholder="Supplier ka naam (optional)">');
-  const branchSel = el('<select class="input">' + branches.map((b) =>
-    '<option value="' + esc(b.id) + '"' + (String(b.id) === String(warehouseId) ? ' selected' : '') + '>' + esc(b.name) + '</option>'
+  const branchSel = el('<select class="input"><option value="warehouse" selected>Warehouse (Godown)</option>' + branches.map((b) =>
+    '<option value="' + esc(b.id) + '">' + esc(b.name) + '</option>'
   ).join('') + '</select>');
   const paidIn = el('<input class="input" type="number" min="0" step="0.01" placeholder="Paid amount (optional)">');
   const linesWrap = el('<div id="purchase-lines" style="margin-top:12px"></div>');
@@ -44,14 +42,14 @@ function renderPurchases(container) {
   ).join('') + '</select>');
   const addQtyIn = el('<input class="input" type="number" min="0" step="any" placeholder="Miqdaar">');
   const addPriceIn = el('<input class="input" type="number" min="0" step="0.01" placeholder="Unit price (Rs)">');
-  const addBtn = el('<button type="button" class="btn">+ Add Karein</button>');
+  const addBtn = el('<button type="button" class="btn">+ Add Purchase</button>');
   addRow.appendChild(addItemSel); addRow.appendChild(addQtyIn); addRow.appendChild(addPriceIn); addRow.appendChild(addBtn);
   const totalEl = el('<p class="muted" id="purchase-total"></p>');
 
   function drawLines() {
     linesWrap.innerHTML = '';
     if (lines.length === 0) {
-      linesWrap.appendChild(el('<p class="muted">Abhi koi line add nahi hui — upar se item, miqdaar aur unit price likhein, phir "+ Add Karein".</p>'));
+      linesWrap.appendChild(el('<p class="muted">Abhi koi line add nahi hui — upar se item, miqdaar aur unit price likhein, phir "+ Add Purchase".</p>'));
     } else {
       const rows = lines.map((ln, i) => {
         const p = products.find((x) => String(x.id) === String(ln.productId));
@@ -88,7 +86,7 @@ function renderPurchases(container) {
   form.appendChild(linesWrap);
   form.appendChild(totalEl);
   form.appendChild(el('<label>Paid Amount (Rs)</label>')); form.appendChild(paidIn);
-  form.appendChild(el('<div class="form-actions"><button type="submit" class="btn btn-primary btn-block">Purchase Save Karein (Auto Stock-In)</button></div>'));
+  form.appendChild(el('<div class="form-actions"><button type="submit" class="btn btn-primary btn-block">Save Purchase (Auto Stock-In)</button></div>'));
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const invoiceNo = invIn.value.trim();

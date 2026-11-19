@@ -1,10 +1,11 @@
-/* Sahara Bakers — Branches + Branch Transfer (v1.0.0).
- * Branches: list + rename/edit (name, address, contact, manager),
- * Transfer History per branch. Branch Transfer form (warehouse →
- * one branch, multi-item staging) sits at the top of this screen:
- * on submit the stock moves, the movement is recorded, and the 80mm
- * thermal bill preview opens automatically. Re-print from Transfer
- * History rows. Wrapped in an IIFE.
+/* Sahara Bakers — Branches (v2.0.0).
+ * Branches Branch 1, Branch 2, Branch 3: list + rename/edit (name,
+ * address, contact, manager), per-branch stock & history — sent so
+ * far, dates, products, quantities, current stock, sold. (No
+ * separate "Remaining" stat: Current Stock already is the
+ * remaining stock.)
+ * (The transfer FORM lives on its own Stock Transfer screen now;
+ * Transfer History lives there and on Billing.) Wrapped in an IIFE.
  */
 (function () {
 'use strict';
@@ -23,109 +24,15 @@ function renderBranches(container) {
   const st = S();
   const branches = st.branches || [];
   const products = st.products || [];
-  const warehouseId = window.App.warehouseBranchId();
+  const transfers = (st.transfers || []).slice().sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
 
   const wrap = el('<div></div>');
-  wrap.appendChild(el('<div class="screen-head"><h1>Branches</h1></div>'));
-
-  // ---- Branch Transfer form (multi-item staging) ----
-  const tCard = el('<div class="card"><h2>Branch Transfer — Warehouse se Branch</h2></div>');
-  const tForm = el('<form></form>');
-  const fromSel = el('<select class="input">' + branches.map((b) =>
-    '<option value="' + esc(b.id) + '"' + (String(b.id) === String(warehouseId) ? ' selected' : '') + '>' + esc(b.name) + '</option>'
-  ).join('') + '</select>');
-  const toSel = el('<select class="input">' + branches.filter((b) => String(b.id) !== String(warehouseId)).map((b) =>
-    '<option value="' + esc(b.id) + '">' + esc(b.name) + '</option>'
-  ).join('') + '</select>');
-  const stageList = el('<div id="transfer-stage" style="margin-top:12px"></div>');
-  const stage = []; // [{productId, qty}]
-  const addRow = el('<div class="form-row"></div>');
-  const addItemSel = el('<select class="input">' + products.map((p) =>
-    '<option value="' + esc(p.id) + '">' + esc(p.name) + ' (' + esc(p.unit || '') + ')</option>'
-  ).join('') + '</select>');
-  const addQtyIn = el('<input class="input" type="number" min="0" step="any" placeholder="Miqdaar">');
-  const addBtn = el('<button type="button" class="btn">+ Add Karein</button>');
-  addRow.appendChild(addItemSel); addRow.appendChild(addQtyIn); addRow.appendChild(addBtn);
-
-  function drawStage() {
-    stageList.innerHTML = '';
-    if (stage.length === 0) {
-      stageList.appendChild(el('<p class="muted">Abhi koi item add nahi hua — upar se item aur miqdaar chunein, phir "+ Add Karein".</p>'));
-      return;
-    }
-    const rows = stage.map((it, i) => {
-      const p = products.find((x) => String(x.id) === String(it.productId));
-      const avail = p ? window.App.stockOf(p, fromSel.value) : 0;
-      return '<tr><td>' + esc(p ? p.name : '') + '</td><td><b>' + it.qty + '</b> ' + esc(p ? (p.unit || '') : '') + '</td><td class="muted">Available: ' + avail + '</td><td><button type="button" class="btn btn-sm" data-i="' + i + '">Hataein</button></td></tr>';
-    }).join('');
-    stageList.appendChild(el('<div class="table-wrap"><table><thead><tr><th>Item</th><th>Miqdaar</th><th>Warehouse Stock</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'));
-    stageList.querySelectorAll('button[data-i]').forEach((b) => b.addEventListener('click', () => {
-      stage.splice(Number(b.getAttribute('data-i')), 1);
-      drawStage();
-    }));
-  }
-  addBtn.addEventListener('click', () => {
-    const p = products.find((x) => String(x.id) === String(addItemSel.value));
-    const qty = Number(addQtyIn.value);
-    if (!p) { notify('Issue — Pehle item chunein', 'error'); return; }
-    if (!qty || qty <= 0) { notify('Issue — Miqdaar durust likhein', 'error'); return; }
-    const existing = stage.find((it) => String(it.productId) === String(p.id));
-    if (existing) existing.qty += qty;
-    else stage.push({ productId: p.id, qty });
-    addQtyIn.value = '';
-    drawStage();
-  });
-  tForm.appendChild(el('<label>From (Warehouse / Godown)</label>')); tForm.appendChild(fromSel);
-  tForm.appendChild(el('<label>To (Branch)</label>')); tForm.appendChild(toSel);
-  tForm.appendChild(el('<label>Item Add Karein</label>')); tForm.appendChild(addRow);
-  tForm.appendChild(stageList);
-  tForm.appendChild(el('<div class="form-actions"><button type="submit" class="btn btn-primary btn-block">Transfer Karein aur Bill Dekhein</button></div>'));
-  tForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const fromId = window.App.normBranchId(fromSel.value);
-    const toId = window.App.normBranchId(toSel.value);
-    if (String(fromId) === String(toId)) { notify('Issue — From aur To branch aik hi nahi ho sakte', 'error'); return; }
-    if (stage.length === 0) { notify('Issue — Pehle kam az kam aik item add karein', 'error'); return; }
-    // Stock check first — nothing moves until every line is available.
-    for (const it of stage) {
-      const p = products.find((x) => String(x.id) === String(it.productId));
-      if (!p) continue;
-      if (window.App.stockOf(p, fromId) < it.qty && !S().settings.allowNegativeStock) {
-        notify('Issue — ' + p.name + ' ka itna stock nahi hai — ' + esc(window.App.branchName(fromId)) + ' mein sirf ' + window.App.stockOf(p, fromId) + ' hai', 'error');
-        return;
-      }
-    }
-    const transfer = {
-      id: DB.nextId('transfers'),
-      date: new Date().toISOString(),
-      fromBranchId: fromId,
-      toBranchId: toId,
-      items: stage.map((it) => ({ productId: it.productId, qty: it.qty })),
-      status: 'sent',
-      createdBy: window.App.user ? window.App.user.name : '',
-    };
-    stage.forEach((it) => {
-      const p = products.find((x) => String(x.id) === String(it.productId));
-      if (!p) return;
-      window.App.adjustStock(p, fromId, -it.qty, 'Transfer — ' + window.App.branchName(toId), window.App.transferBillNo(transfer));
-      window.App.adjustStock(p, toId, it.qty, 'Transfer — ' + window.App.branchName(fromId) + ' se aaya', window.App.transferBillNo(transfer));
-    });
-    S().transfers.unshift(transfer);
-    window.App.save();
-    stage.length = 0;
-    drawStage();
-    notify('Ho Gaya ✓ — Transfer ' + window.App.transferBillNo(transfer) + ' ho gaya — ' + window.App.branchName(toId) + ' ko stock bhej diya', 'success');
-    renderBranches(container);
-    if (window.App.showTransferBill) window.App.showTransferBill(transfer);
-  });
-  tCard.appendChild(tForm);
-  wrap.appendChild(tCard);
+  wrap.appendChild(el('<div class="screen-head"><h1>Branches</h1><button type="button" class="btn btn-primary" id="branches-transfer-btn">Transfer Stock</button></div>'));
 
   // ---- Branch list + edit ----
   const bCard = el('<div class="card"><h2>Branch List</h2></div>');
   const rows = branches.map((b) => {
-    const isWarehouse = String(b.id) === String(warehouseId);
-    return '<tr><td><b>' + esc(b.name) + '</b>' + (isWarehouse ? ' <span class="muted">(Warehouse / Godown)</span>' : '') + '</td><td>' + esc(b.address || '—') + '</td><td>' + esc(b.contact || '—') + '</td><td>' + esc(b.manager || '—') + '</td><td><button type="button" class="btn btn-sm" data-edit="' + esc(b.id) + '">Edit Karein</button></td></tr>';
+    return '<tr><td><b>' + esc(b.name) + '</b></td><td>' + esc(b.address || '—') + '</td><td>' + esc(b.contact || '—') + '</td><td>' + esc(b.manager || '—') + '</td><td><button type="button" class="btn btn-sm" data-edit="' + esc(b.id) + '">Edit Karein</button></td></tr>';
   }).join('');
   bCard.appendChild(el('<div class="table-wrap"><table><thead><tr><th>Branch</th><th>Address</th><th>Contact</th><th>Manager</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'));
   bCard.querySelectorAll('button[data-edit]').forEach((btn) => btn.addEventListener('click', () => {
@@ -147,11 +54,11 @@ function renderBranches(container) {
     const addrIn = el('<input class="input" type="text" value="' + esc(b.address || '') + '" placeholder="Address">');
     const contactIn = el('<input class="input" type="text" value="' + esc(b.contact || '') + '" placeholder="Contact / phone">');
     const mgrIn = el('<input class="input" type="text" value="' + esc(b.manager || '') + '" placeholder="Manager ka naam">');
-    form.appendChild(el('<label>Branch Ka Naam</label>')); form.appendChild(nameIn);
+    form.appendChild(el('<label>Branch Name</label>')); form.appendChild(nameIn);
     form.appendChild(el('<label>Address</label>')); form.appendChild(addrIn);
     form.appendChild(el('<label>Contact</label>')); form.appendChild(contactIn);
     form.appendChild(el('<label>Manager</label>')); form.appendChild(mgrIn);
-    const row = el('<div class="form-actions"><button type="submit" class="btn btn-primary">Save Karein</button><button type="button" class="btn" id="branch-edit-cancel">Cancel</button></div>');
+    const row = el('<div class="form-actions"><button type="submit" class="btn btn-primary">Save</button><button type="button" class="btn" id="branch-edit-cancel">Cancel</button></div>');
     form.appendChild(row);
     form.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -177,38 +84,51 @@ function renderBranches(container) {
     nameIn.focus();
   }
 
-  // ---- Transfer History (per branch filter + re-print) ----
-  const transfers = (st.transfers || []).slice().sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
-  const hCard = el('<div class="card"><h2>Transfer History</h2></div>');
-  const filterRow = el('<div class="toolbar"><div class="field"><label>Branch</label><select class="input" id="th-filter"><option value="all">Sab Branches</option>' +
-    branches.map((b) => '<option value="' + esc(b.id) + '">' + esc(b.name) + '</option>').join('') + '</select></div></div>');
-  hCard.appendChild(filterRow);
-  const histWrap = el('<div id="th-list"></div>');
-  hCard.appendChild(histWrap);
-  function drawHistory() {
-    const f = filterRow.querySelector('#th-filter').value;
-    const list = transfers.filter((t) => f === 'all' || String(t.fromBranchId) === String(f) || String(t.toBranchId) === String(f));
-    histWrap.innerHTML = '';
-    if (list.length === 0) { histWrap.appendChild(el('<p class="muted">Koi transfer abhi tak nahi hua.</p>')); return; }
-    const rowsHtml = list.map((t) => {
-      const items = (t.items || []).map((it) => {
-        const p = products.find((x) => String(x.id) === String(it.productId));
-        return esc(p ? p.name : ('Item ' + it.productId)) + ' × ' + it.qty;
-      }).join(', ');
-      return '<tr><td><b>' + esc(window.App.transferBillNo(t)) + '</b></td><td>' + esc(window.App.branchName(t.fromBranchId)) + ' → ' + esc(window.App.branchName(t.toBranchId)) + '</td><td>' + items + '</td><td>' + esc(t.createdBy || '') + '</td><td class="muted">' + esc(String(t.date || '').slice(0, 16).replace('T', ' ')) + '</td><td><button type="button" class="btn btn-sm" data-bill="' + esc(t.id) + '">Bill</button></td></tr>';
-    }).join('');
-    histWrap.appendChild(el('<div class="table-wrap"><table><thead><tr><th>Bill No</th><th>From → To</th><th>Items</th><th>Sent By</th><th>Date</th><th></th></tr></thead><tbody>' + rowsHtml + '</tbody></table></div>'));
-    histWrap.querySelectorAll('button[data-bill]').forEach((btn) => btn.addEventListener('click', () => {
-      const t = transfers.find((x) => String(x.id) === String(btn.getAttribute('data-bill')));
-      if (t && window.App.showTransferBill) window.App.showTransferBill(t);
-    }));
-  }
-  filterRow.querySelector('#th-filter').addEventListener('change', drawHistory);
-  drawHistory();
-  wrap.appendChild(hCard);
+  // ---- Per-branch stock & history ----
+  // Sent so far (transfers in), current stock, sold (explicit Stock
+  // Out movements only — see DB.soldQtyForBranch / isSaleMovement:
+  // production raw consumption and transfer legs are NOT sales, so
+  // a production run never inflates a branch's "Sold". Production
+  // movements are recorded at the Warehouse — a separate location,
+  // not a branch — so they never enter any branch's Sold at all.) The
+  // app has no sales screen, so branch counter sales are recorded
+  // as Stock Out. There is NO separate "Remaining" stat: Current
+  // Stock already IS the remaining stock, so showing it twice under
+  // two labels was a duplicate — it is dropped, with a note below
+  // the stats saying so.
+  branches.forEach((b) => {
+    const sent = transfers.filter((t) => String(t.toBranchId) === String(b.id));
+    const sentQty = sent.reduce((a, t) => a + (t.items || []).reduce((x, it) => x + (Number(it.qty) || 0), 0), 0);
+    const curStock = products.reduce((a, p) => a + (window.App.stockOf(p, b.id) || 0), 0);
+    const soldQty = DB.soldQtyForBranch(b.id);
+    const card = el('<div class="card" id="branch-summary-' + esc(b.id) + '"><h2>' + esc(b.name) + ' — Stock &amp; History</h2></div>');
+    const stats = el('<div class="stat-grid"></div>');
+    const stat = (label, value, sub) => el('<div class="stat"><div class="stat-label">' + esc(label) + '</div><div class="stat-value">' + esc(value) + '</div>' + (sub ? '<div class="muted">' + esc(sub) + '</div>' : '') + '</div>');
+    stats.appendChild(stat('Sent So Far', String(sentQty), sent.length + ' transfers aaye'));
+    stats.appendChild(stat('Current Stock', String(curStock), 'units maujooda'));
+    stats.appendChild(stat('Sold', String(soldQty), 'Stock Out (sales ka koi alag screen nahi — Stock Out yahan sold mein count hota hai; Production aur Transfer count nahi hote)'));
+    card.appendChild(stats);
+    card.appendChild(el('<p class="muted">Current Stock hi remaining stock hai — is liye alag "Remaining" stat nahi dikhaya jata.</p>'));
+    if (sent.length === 0) card.appendChild(el('<p class="muted">Is branch ko abhi tak koi transfer nahi aaya.</p>'));
+    else {
+      const rowsHtml = sent.map((t) => {
+        const items = (t.items || []).map((it) => {
+          const p = products.find((x) => String(x.id) === String(it.productId));
+          return esc(p ? p.name : ('Item ' + it.productId)) + ' × ' + it.qty;
+        }).join(', ');
+        return '<tr><td><b>' + esc(window.App.transferBillNo(t)) + '</b></td><td>' + esc(String(t.date || '').slice(0, 16).replace('T', ' ')) + '</td><td>' + items + '</td><td>' + esc(window.App.branchName(t.fromBranchId)) + '</td><td><button type="button" class="btn btn-sm" data-bill="' + esc(t.id) + '">Bill</button></td></tr>';
+      }).join('');
+      card.appendChild(el('<div class="table-wrap"><table><thead><tr><th>Bill No</th><th>Date</th><th>Products &amp; Quantities</th><th>From</th><th></th></tr></thead><tbody>' + rowsHtml + '</tbody></table></div>'));
+      card.querySelectorAll('button[data-bill]').forEach((btn) => btn.addEventListener('click', () => {
+        const t = transfers.find((x) => String(x.id) === String(btn.getAttribute('data-bill')));
+        if (t && window.App.showTransferBill) window.App.showTransferBill(t);
+      }));
+    }
+    wrap.appendChild(card);
+  });
 
+  wrap.querySelector('#branches-transfer-btn').addEventListener('click', () => window.App.go('transfer'));
   container.appendChild(wrap);
-  drawStage();
 }
 
 window.Screens.branches = renderBranches;

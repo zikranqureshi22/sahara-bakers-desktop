@@ -1,4 +1,4 @@
-/* Sahara Bakers — renderer core (v1.0.0).
+/* Sahara Bakers — renderer core (v2.0.0).
  * Contract: window.App exposes {state, user, theme, go, notify, money,
  * branchName, stockOf, can, currentBranchId, save}.
  * window.Screens = {} registry; each screen module registers
@@ -10,7 +10,10 @@
  *                      sessionTimeoutMinutes, printerName,
  *                      lowStockNotifications, defaultLowStockLimit }
  *   state.branches   [{ id, name, address, contact, manager }]
- *                      branch 1 = the central godown (Warehouse)
+ *                      — exactly 3 real branches (Branch 1/2/3).
+ *                      The Warehouse/Godown is NOT a branch: it is
+ *                      the separate location DB.WAREHOUSE_ID
+ *                      ('warehouse') — see warehouseBranchId().
  *   state.products   [{ id, name, price (null until entered), purchasePrice,
  *                       category, type ('raw'|'finished'), unit, sku,
  *                       barcode, lowThreshold, status, image,
@@ -62,7 +65,17 @@ function ensureState() {
   if (typeof s.settings.allowNegativeStock !== 'boolean') s.settings.allowNegativeStock = false;
   if (typeof s.settings.lowStockNotifications !== 'boolean') s.settings.lowStockNotifications = true;
   if (!Array.isArray(s.branches)) s.branches = [];
-  if (s.branches.length === 0) s.branches.push({ id: 1, name: 'Warehouse (Godown)', address: '' });
+  if (s.branches.length === 0) {
+    // No branches at all (seed file missing): the v2 seed shape —
+    // exactly 3 real branches. The Warehouse is NOT a branch and is
+    // never created here; it is the separate location
+    // DB.WAREHOUSE_ID ('warehouse').
+    s.branches.push(
+      { id: 1, name: 'Branch 1', address: '' },
+      { id: 2, name: 'Branch 2', address: '' },
+      { id: 3, name: 'Branch 3', address: '' }
+    );
+  }
   if (s.settings.defaultBranchId === undefined || s.settings.defaultBranchId === null) s.settings.defaultBranchId = s.branches[0].id;
   if (!Array.isArray(s.products)) s.products = [];
   if (!Array.isArray(s.appUsers)) s.appUsers = [];
@@ -92,22 +105,50 @@ function sanitiseErrorMessage(e) {
 }
 
 /* ---------- Role / permission model ---------- */
-// Roles: Owner (Rahmanullah), Manager, Warehouse Staff, Branch.
-// Owner can do everything. Manager: everything except logins/settings.
-// Warehouse Staff: dashboard, items, stock in/out, stock, branches
-// (transfers). Branch: own branch stock + items view only.
-const OWNER_ONLY = ['logins', 'settings'];
+// Roles: Owner (Rahmanullah, PIN 1234), Manager (PIN 123),
+// Warehouse Staff, Branch.
+// Owner can do everything. Manager: daily ops only — Reports,
+// Logins and Settings are Owner-only and hidden from Manager.
+// Warehouse Staff: dashboard, products/raw/production/finish,
+// warehouse, transfer, branches, stock in/out, stock.
+// Branch: own branch stock + items view only.
+const OWNER_ONLY = ['reports', 'logins', 'settings'];
 const NAV = [
-  { id: 'dashboard', label: 'Dashboard', action: 'dashboard' },
-  { id: 'items', label: 'Items', action: 'items' },
-  { id: 'theme', label: 'Dark Theme', action: 'theme' },
-  { id: 'logins', label: 'Logins', action: 'logins' },
-  { id: 'settings', label: 'Settings', action: 'settings' },
-  { id: 'branches', label: 'Branches', action: 'branches' },
-  { id: 'stockio', label: 'Stock In/Out', action: 'stockio' },
-  { id: 'stock', label: 'Stock', action: 'stock' },
-  { id: 'purchases', label: 'Purchases', action: 'purchases' },
+  { id: 'dashboard', label: 'Dashboard', sub: 'Aaj ka hisaab', action: 'dashboard', section: 'main' },
+  { id: 'products', label: 'Products', sub: 'Sab items', action: 'products', section: 'main' },
+  { id: 'raw', label: 'Raw Material', sub: 'Kacha maal', action: 'raw', section: 'main' },
+  { id: 'production', label: 'Production', sub: 'Tayyar karna', action: 'production', section: 'main' },
+  { id: 'finished', label: 'Finish Goods', sub: 'Tayyar cheezein', action: 'finished', section: 'main' },
+  { id: 'warehouse', label: 'Warehouse', sub: 'Godown', action: 'warehouse', section: 'main' },
+  { id: 'transfer', label: 'Stock Transfer', sub: 'Branch ko bhejo', action: 'transfer', section: 'main' },
+  { id: 'branches', label: 'Branches', sub: 'Teeno branches', action: 'branches', section: 'main' },
+  { id: 'billing', label: 'Billing', sub: 'Bill aur invoices', action: 'billing', section: 'main' },
+  { id: 'stockio', label: 'Stock In/Out', sub: 'Maal aaya / gaya', action: 'stockio', section: 'main' },
+  { id: 'stock', label: 'Stock', sub: 'Stock dekho', action: 'stock', section: 'main' },
+  { id: 'reports', label: 'Reports', sub: 'Hisaab report', action: 'reports', section: 'other' },
+  { id: 'purchases', label: 'Purchases', sub: 'Kharidari', action: 'purchases', section: 'other' },
+  { id: 'logins', label: 'Logins', sub: 'Login details', action: 'logins', section: 'other' },
+  { id: 'settings', label: 'Settings', sub: 'Settings', action: 'settings', section: 'other' },
+  { id: 'theme', label: 'Dark Theme', action: 'theme', section: 'other' },
 ];
+// Roman Urdu supporting line under the breadcrumb on each screen.
+const SCREEN_SUBS = {
+  dashboard: 'Aaj ka hisaab — kul stock, production aur transfers',
+  products: 'Sab items aik hi screen par — kisi item par click karein to uski details khulengi',
+  raw: 'Kacha maal — godown stock aur kharid price',
+  production: 'Raw material se finish goods tayyar karein',
+  finished: 'Tayyar cheezein — stock, cost aur history',
+  warehouse: 'Godown — finish goods ka kul stock',
+  transfer: 'Warehouse se kisi bhi branch ko maal bhejein',
+  branches: 'Teeno branches ka stock aur transfer history',
+  billing: 'Production aur transfer ke bill',
+  stockio: 'Maal aaya ya gaya — stock in aur out',
+  stock: 'Godown aur har branch ka stock',
+  reports: 'Mahina aur kul hisaab — report',
+  purchases: 'Kharidari — invoice aur stock in',
+  logins: 'Login details aur PIN badlein',
+  settings: 'Backup, printer aur theme settings',
+};
 
 const App = {
   state: DB.state,
@@ -224,7 +265,28 @@ const App = {
     if (DB.loadError) {
       setTimeout(() => this.notify(DB.recoveredFromBackup ? (DB.loadError || 'Data backup se wapas laya gaya hai — sab kuch mehfooz hai') : 'Issue — ' + DB.loadError, DB.recoveredFromBackup ? 'warning' : 'error'), 400);
     }
-    this.renderLogin();
+    // Splash: Sahara logo animation (~1.1s, click to skip), then the
+    // login-selection screen. The splash never blocks login for long.
+    this.showSplash();
+  },
+
+  showSplash() {
+    const splash = document.getElementById('splash-screen');
+    const login = document.getElementById('login-screen');
+    if (!splash) { this.renderLogin(); return; }
+    splash.hidden = false;
+    splash.style.display = 'flex';
+    if (login) login.style.display = 'none';
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      splash.hidden = true;
+      splash.style.display = 'none';
+      this.renderLogin();
+    };
+    splash.addEventListener('click', finish, { once: true });
+    setTimeout(finish, 1100);
   },
 
   save() { dbSave(); },
@@ -277,6 +339,9 @@ const App = {
     return this.money(n);
   },
   branchName(id) {
+    // The Warehouse is a real location separate from the 3 branches:
+    // its name is always "Warehouse", never a branch name.
+    if (String(id) === 'warehouse') return 'Warehouse';
     const b = (this.state.branches || []).find((x) => String(x.id) === String(id));
     return b ? b.name : (id === null || id === undefined || id === '' ? '—' : String(id));
   },
@@ -287,12 +352,15 @@ const App = {
     const b = (this.state.branches || []).find((x) => String(x.id) === String(id));
     return b ? b.id : id;
   },
-  // Branch 1 is the central godown (Warehouse). Transfers always start
-  // here unless the Owner picks another source branch.
+  // The Warehouse/Godown is a REAL location, separate from the 3
+  // branches (Branch 1, Branch 2, Branch 3) — DB.WAREHOUSE_ID
+  // ('warehouse'). It is never a branch record, so it never appears
+  // in the branch list or the header branch selector. Every screen
+  // that needs godown stock calls this; nothing hard-codes a branch
+  // id for the warehouse any more (v1.0.0/v2.0.0 used Branch 1 by
+  // convention — that is gone; see the v201 migration in db.js).
   warehouseBranchId() {
-    const bs = this.state.branches || [];
-    const b1 = bs.find((b) => String(b.id) === '1');
-    return b1 ? b1.id : (bs[0] && bs[0].id);
+    return (typeof DB !== 'undefined' && DB.WAREHOUSE_ID) ? DB.WAREHOUSE_ID : 'warehouse';
   },
   stockOf(product, branchId) {
     if (!product) return 0;
@@ -319,7 +387,7 @@ const App = {
     else product.branchStocks.push({ branchId: bid, qty: Math.max(0, Number(qty) || 0) });
     product.stock = product.branchStocks.reduce((a, b) => a + (Number(b.qty) || 0), 0);
   },
-  adjustStock(product, branchId, delta, reason, ref) {
+  adjustStock(product, branchId, delta, reason, ref, clientRef) {
     const bid = this.normBranchId(branchId);
     const next = this.stockOf(product, bid) + Number(delta);
     this.setStock(product, bid, next);
@@ -327,6 +395,7 @@ const App = {
       productId: product.id, productName: product.name || '',
       branchId: bid, qty: Number(delta), reason: reason || 'Adjustment',
       user: this.user ? this.user.name : '', reference: ref || '',
+      clientRef: clientRef || null,
     };
     try {
       if (DB.addMovement) DB.addMovement(movement);
@@ -363,13 +432,13 @@ const App = {
     if (OWNER_ONLY.indexOf(action) !== -1) return false;
     if (action === 'theme') return true;
     if (role === 'Manager') {
-      return ['dashboard', 'items', 'branches', 'stockio', 'stock', 'purchases'].indexOf(action) !== -1;
+      return ['dashboard', 'products', 'raw', 'production', 'finished', 'warehouse', 'transfer', 'branches', 'billing', 'stockio', 'stock', 'purchases'].indexOf(action) !== -1;
     }
     if (role === 'Warehouse Staff') {
-      return ['dashboard', 'items', 'branches', 'stockio', 'stock'].indexOf(action) !== -1;
+      return ['dashboard', 'products', 'raw', 'production', 'finished', 'warehouse', 'transfer', 'branches', 'stockio', 'stock'].indexOf(action) !== -1;
     }
     if (role === 'Branch') {
-      return ['dashboard', 'items', 'stock'].indexOf(action) !== -1;
+      return ['dashboard', 'products', 'finished', 'stock'].indexOf(action) !== -1;
     }
     return false;
   },
@@ -405,17 +474,24 @@ const App = {
     const container = document.getElementById('screen');
     if (!container) return;
     container.innerHTML = '';
+    // SmartPOS breadcrumb: back to Dashboard + current screen name.
+    const crumb = el('<div class="crumb"><button type="button" class="crumb-home" id="crumb-home">← Sahara Bakers</button><span class="crumb-sep">›</span><span class="crumb-here">' + esc(nav ? nav.label : screenName) + '</span></div>');
+    container.appendChild(crumb);
+    if (SCREEN_SUBS[screenName]) container.appendChild(el('<div class="screen-sub">' + esc(SCREEN_SUBS[screenName]) + '</div>'));
+    crumb.querySelector('#crumb-home').addEventListener('click', () => this.go('dashboard'));
+    const content = el('<div class="screen-content"></div>');
+    container.appendChild(content);
     const fn = window.Screens[screenName];
     const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
     if (typeof fn === 'function') {
-      try { fn(container); }
+      try { fn(content); }
       catch (e) {
-        container.innerHTML = '';
+        content.innerHTML = '';
         this.handleError(e, 'screen:' + screenName);
-        container.appendChild(el('<div class="card"><h2>Masla</h2><p>Screen load nahi ho saki — dobara koshish karein ya app band kar ke kholein.</p></div>'));
+        content.appendChild(el('<div class="card"><h2>Masla</h2><p>Screen load nahi ho saki — dobara koshish karein ya app band kar ke kholein.</p></div>'));
       }
     } else {
-      container.appendChild(el(
+      content.appendChild(el(
         '<div class="card"><h2>' + esc(nav ? nav.label : screenName) + '</h2>' +
         '<p class="muted">Ye screen abhi tayyar ho raha hai. Baraye meharbani thodi der baad dobara koshish karein.</p></div>'
       ));
@@ -427,6 +503,92 @@ const App = {
     window.scrollTo(0, 0);
     const sc = document.getElementById('screen');
     if (sc) sc.scrollTop = 0;
+  },
+
+  /* ----- product detail / manage screen ----- */
+  // The product's OWN detail screen (opened by clicking a card/row on
+  // a listing). Edit, Delete and stock correction live HERE — never on
+  // the main listing screens. Non-editors see details + history only.
+  showProductDetail(product, opts) {
+    const overlay = document.getElementById('item-form-overlay');
+    const bodyEl = document.getElementById('item-form-body');
+    const titleEl = document.getElementById('item-form-title');
+    if (!overlay || !bodyEl || !product) return;
+    opts = opts || {};
+    const canEdit = this.canEditItems();
+    const warehouseId = this.warehouseBranchId();
+    titleEl.textContent = 'Product Details — ' + (product.name || '');
+    bodyEl.innerHTML = '';
+    const photo = product.image
+      ? '<img class="detail-photo" src="' + esc(product.image) + '" alt="' + esc(product.name) + '" onerror="this.style.display=\'none\'">'
+      : '<div class="detail-photo detail-photo-ph">' + esc(String(product.name || '').slice(0, 12)) + '</div>';
+    bodyEl.appendChild(el('<div>' + photo + '</div>'));
+    bodyEl.appendChild(el('<h2 style="margin-top:12px">' + esc(product.name || '') + '</h2>'));
+    bodyEl.appendChild(el('<p class="muted">' + esc(product.category || '') + ' · ' + (product.type === 'raw' ? 'Raw Material' : 'Finish Goods') + ' · ' + esc(product.unit || '') + '</p>'));
+    const infoRows = [
+      ['Sale Price', this.moneyOrDash(product.price)],
+      ['Purchase Price / Cost', this.moneyOrDash(product.purchasePrice)],
+      ['Details', product.details || '—'],
+      ['Low Stock Limit', product.lowThreshold == null ? '—' : String(product.lowThreshold)],
+      ['SKU', product.sku || '—'],
+      ['Barcode', product.barcode || '—'],
+    ].map((kv) => '<tr><td><b>' + esc(kv[0]) + '</b></td><td>' + esc(kv[1]) + '</td></tr>').join('');
+    bodyEl.appendChild(el('<div class="table-wrap"><table><tbody>' + infoRows + '</tbody></table></div>'));
+    // Stock per location.
+    const locs = [{ id: warehouseId, name: 'Warehouse (Godown)' }].concat((this.state.branches || []).map((b) => ({ id: b.id, name: b.name })));
+    const stockRows = locs.map((loc) => {
+      const qty = this.stockOf(product, loc.id);
+      const low = this.isLowStock(product, loc.id);
+      return '<tr><td>' + esc(loc.name) + '</td><td><b>' + qty + '</b> ' + esc(product.unit || '') + (low ? ' <span class="low-tag">Kam Stock</span>' : '') + '</td></tr>';
+    }).join('');
+    bodyEl.appendChild(el('<h3 style="margin-top:14px">Stock — Godown aur Branches</h3>'));
+    bodyEl.appendChild(el('<div class="table-wrap"><table><thead><tr><th>Jagah</th><th>Stock</th></tr></thead><tbody>' + stockRows + '<tr><td><b>Total Stock</b></td><td><b>' + this.totalStock(product) + '</b> ' + esc(product.unit || '') + '</td></tr></tbody></table></div>'));
+    // Production history (finish items only).
+    if (product.type === 'finished') {
+      const prods = (this.state.productions || []).filter((pr) => String(pr.finishProductId) === String(product.id)).slice(0, 5);
+      if (prods.length > 0) {
+        const rows = prods.map((pr) => '<tr><td><b>' + esc(pr.billNo || '') + '</b></td><td><b>' + pr.finishQty + ' ' + esc(pr.finishUnit || '') + '</b></td><td>' + esc(this.money(pr.totalCost)) + '</td><td class="muted">' + esc(String(pr.date || '').slice(0, 16).replace('T', ' ')) + '</td></tr>').join('');
+        bodyEl.appendChild(el('<h3 style="margin-top:14px">Production History</h3>'));
+        bodyEl.appendChild(el('<div class="table-wrap"><table><thead><tr><th>Bill</th><th>Produced</th><th>Total Cost</th><th>Date</th></tr></thead><tbody>' + rows + '</tbody></table></div>'));
+      }
+    }
+    // Stock history (latest 8).
+    const moves = (this.state.stockMovements || []).filter((m) => String(m.productId) === String(product.id)).slice(0, 8);
+    bodyEl.appendChild(el('<h3 style="margin-top:14px">Stock History</h3>'));
+    if (moves.length === 0) bodyEl.appendChild(el('<p class="muted">Is item ki koi stock movement abhi tak nahi hai.</p>'));
+    else {
+      const rows = moves.map((m) => {
+        const q = Number(m.qty) || 0;
+        return '<tr><td>' + (q > 0 ? 'Aaya' : 'Gaya') + '</td><td><b>' + Math.abs(q) + '</b></td><td>' + esc(this.branchName(m.branchId)) + '</td><td>' + esc(m.reason || '') + '</td><td class="muted">' + esc(String(m.date || '').slice(0, 16).replace('T', ' ')) + '</td></tr>';
+      }).join('');
+      bodyEl.appendChild(el('<div class="table-wrap"><table><thead><tr><th>Type</th><th>Miqdaar</th><th>Branch</th><th>Wajah</th><th>Date</th></tr></thead><tbody>' + rows + '</tbody></table></div>'));
+    }
+    // Actions: Edit / Delete live here (editors only); Close for everyone.
+    const actions = el('<div class="form-actions"></div>');
+    if (canEdit && typeof opts.onEdit === 'function') {
+      const editBtn = el('<button type="button" class="btn btn-primary" id="detail-edit-btn">Edit</button>');
+      editBtn.addEventListener('click', () => { try { opts.onEdit(product); } catch (e) { this.handleError(e, 'detail-edit'); } });
+      actions.appendChild(editBtn);
+      const delBtn = el('<button type="button" class="btn btn-danger" id="detail-delete-btn">Delete</button>');
+      delBtn.addEventListener('click', async () => {
+        const ok = await this.confirmDialog('Product Delete Karein?', '"' + (product.name || '') + '" delete kar diya jayega. Ye wapas nahi aayega.');
+        if (!ok) return;
+        const idx = (this.state.products || []).findIndex((x) => String(x.id) === String(product.id));
+        if (idx !== -1) this.state.products.splice(idx, 1);
+        this.save();
+        this.notify('Ho Gaya ✓ — Product delete ho gaya: ' + (product.name || ''), 'success');
+        const ov = document.getElementById('item-form-overlay');
+        if (ov) { ov.hidden = true; ov.style.display = 'none'; }
+        this.go(this.currentScreen || 'products');
+      });
+      actions.appendChild(delBtn);
+    }
+    const closeBtn = el('<button type="button" class="btn" id="detail-close-btn">Close</button>');
+    closeBtn.addEventListener('click', () => { const ov = document.getElementById('item-form-overlay'); if (ov) { ov.hidden = true; ov.style.display = 'none'; } });
+    actions.appendChild(closeBtn);
+    bodyEl.appendChild(actions);
+    overlay.hidden = false;
+    overlay.style.display = 'flex';
   },
 
   renderHeader() {
@@ -452,22 +614,36 @@ const App = {
     const nav = document.getElementById('sidebar');
     if (!nav) return;
     nav.innerHTML = '';
+    // Brand at the top of the sidebar (SmartPOS layout).
+    nav.appendChild(el('<div class="sidebar-brand"><img src="assets/sahara-logo.png" alt="Sahara Bakers logo" onerror="this.style.display=\'none\'"><div><div class="sidebar-brand-name">SAHARA BAKERS</div><div class="sidebar-brand-sub">Godown Stock</div></div></div>'));
+    let currentSection = null;
+    const addSectionLabel = (label) => {
+      nav.appendChild(el('<div class="sidebar-section-label">' + esc(label) + '</div>'));
+    };
     NAV.forEach((item) => {
       // The theme toggle is a sidebar action, not a screen — it shows
       // for every logged-in user.
       if (item.action === 'theme') {
+        if (currentSection !== 'other') { addSectionLabel('Other'); currentSection = 'other'; }
         const label = this.theme === 'dark' ? 'Light Theme' : 'Dark Theme';
-        const btn = el('<button type="button" class="nav-item">' + esc(label) + '</button>');
+        const btn = el('<button type="button" class="nav-item"><span class="nav-label">' + esc(label) + '</span></button>');
         btn.addEventListener('click', () => this.toggleTheme());
         nav.appendChild(btn);
         return;
       }
       if (!this.user) return;
       if (!this.can(item.action)) return; // hide nav items the role cannot use
-      const btn = el('<button type="button" class="nav-item' + (this.currentScreen === item.id ? ' active' : '') + '">' + esc(item.label) + '</button>');
+      const section = item.section || 'main';
+      if (section !== currentSection) { addSectionLabel(section === 'other' ? 'Other' : 'Main'); currentSection = section; }
+      const btn = el('<button type="button" class="nav-item' + (this.currentScreen === item.id ? ' active' : '') + '"><span class="nav-label">' + esc(item.label) + '</span>' + (item.sub ? '<span class="nav-sub">' + esc(item.sub) + '</span>' : '') + '</button>');
       btn.addEventListener('click', () => this.go(item.id));
       nav.appendChild(btn);
     });
+    // User block at the bottom of the sidebar (SmartPOS layout).
+    if (this.user) {
+      const initials = String(this.user.name || '?').trim().split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+      nav.appendChild(el('<div class="sidebar-user"><div class="sidebar-user-avatar">' + esc(initials) + '</div><div><div class="sidebar-user-name">' + esc(this.user.name) + '</div><div class="sidebar-user-role">' + esc(this.user.role) + '</div></div></div>'));
+    }
   },
 
   showShell(show) {
@@ -478,26 +654,70 @@ const App = {
   },
 
   /* ----- login / owner setup / logout ----- */
-  // PIN login: the app opens to this screen. Owner Rahmanullah's entry
-  // PIN is 3333 (seeded hashed). 5 wrong PINs = 15-minute lockout,
-  // persisted per user, with a clear notice stating the lockout.
+  // v2.0.0 login: splash, then login-selection cards — Owner Rahmanullah
+  // (PIN 1234, seeded hashed) and Manager (PIN 123). Each card opens
+  // its own PIN page. 5 wrong PINs = 15-minute lockout, persisted per
+  // user, with a clear notice stating the lockout.
   renderLogin() {
     this.showShell(false);
     const body = document.getElementById('login-body');
     if (!body) return;
     body.innerHTML = '';
+    const loginCard = document.querySelector('.login-card');
     const allUsers = (this.state.appUsers || []).filter((u) => u.isActive !== false && u.active !== false);
     if (allUsers.length === 0) {
+      // No logins at all: the Owner Setup form (logo + ⋮ menu visible).
+      if (loginCard) loginCard.classList.remove('select-mode');
       body.appendChild(this.ownerSetupForm());
       return;
     }
+    // ---- Step 1: login-selection screen — ONLY two buttons ----
+    // Owner (PIN 1234) and Manager (PIN 123), in beautiful elegant
+    // fonts. Nothing else on this screen: no logo, no heading, no
+    // extra text, no menu (the logo already showed in the splash
+    // animation; the ⋮ menu with theme + restore lives on the PIN
+    // page instead). Each button opens its own PIN page; the correct
+    // PIN opens that role's dashboard. 5 wrong PINs = 15-minute
+    // lockout, persisted per user, exactly as before.
+    if (loginCard) loginCard.classList.add('select-mode');
+    const cards = el('<div class="login-cards" id="login-cards"></div>');
+    allUsers.forEach((u) => {
+      const card = el('<button type="button" class="btn login-role-card" data-username="' + esc(u.username || '') + '">' +
+        '<span class="login-role-name">' + esc(u.role) + '</span></button>');
+      card.addEventListener('click', () => this.renderPinPage(u));
+      cards.appendChild(card);
+    });
+    body.appendChild(cards);
+    // After a session lock, the same user's PIN page opens straight
+    // away, so the PIN is all they need to get back to work.
+    if (this._lockedUser) {
+      const lu = allUsers.find((u) => String(u.id) === String(this._lockedUser.id));
+      if (lu) { this.renderPinPage(lu); return; }
+    }
+    if (this._selectedLoginUser) {
+      const su = allUsers.find((u) => String(u.id) === String(this._selectedLoginUser.id));
+      if (su) { this.renderPinPage(su); return; }
+    }
+  },
+
+  // ---- Step 2: PIN page for ONE selected user ----
+  renderPinPage(u) {
+    this.showShell(false);
+    // The PIN page is not the selection screen: logo + ⋮ menu (theme
+    // toggle + one-click restore) are visible again here.
+    const loginCard = document.querySelector('.login-card');
+    if (loginCard) loginCard.classList.remove('select-mode');
+    const body = document.getElementById('login-body');
+    if (!body) return;
+    this._selectedLoginUser = u;
+    body.innerHTML = '';
     const wrap = el('<div></div>');
-    wrap.appendChild(el('<h3 style="text-align:left">Login Karein</h3>'));
-    wrap.appendChild(el('<p class="muted" style="text-align:left">Apna naam chunein aur PIN dalein.</p>'));
-    const lockMsg = el('<p class="muted" style="text-align:left"></p>');
+    wrap.appendChild(el('<button type="button" class="btn btn-ghost btn-sm" id="login-back-btn">← Back</button>'));
+    wrap.appendChild(el('<h3 style="text-align:left">Enter PIN</h3>'));
+    wrap.appendChild(el('<p class="muted" style="text-align:left"><b>' + esc(u.name) + '</b> (' + esc(u.role) + ') — apna PIN dalein.</p>'));
+    const lockMsg = el('<p class="muted" style="text-align:left" id="login-lock-msg"></p>');
     const showLockMsg = () => {
-      const u = this._selectedLoginUser;
-      if (!u || !DB.isLoginLocked) { lockMsg.textContent = ''; return; }
+      if (!DB.isLoginLocked) { lockMsg.textContent = ''; return; }
       try {
         const lock = DB.isLoginLocked(u.username);
         lockMsg.textContent = lock.locked
@@ -505,37 +725,15 @@ const App = {
           : '';
       } catch (e) { lockMsg.textContent = ''; }
     };
-    const list = el('<div class="login-user-list"></div>');
-    allUsers.forEach((u) => {
-      const b = el('<button type="button" class="btn login-user-btn">' + esc(u.name) + ' <span class="muted">(' + esc(u.role) + ')</span></button>');
-      b.addEventListener('click', () => {
-        this._selectedLoginUser = u;
-        list.querySelectorAll('.login-user-btn').forEach((x) => x.classList.remove('selected'));
-        b.classList.add('selected');
-        showLockMsg();
-        pinInput.focus();
-      });
-      list.appendChild(b);
-      // After a session lock, the same user is pre-selected so the PIN
-      // is all they need to get back to work.
-      if (this._lockedUser && String(this._lockedUser.id) === String(u.id)) {
-        this._selectedLoginUser = u;
-        b.classList.add('selected');
-      }
-    });
-    wrap.appendChild(list);
     const form = el('<form></form>');
     const pinInput = el('<input class="input pin-input" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="PIN" required>');
-    const pinLabel = el('<label>PIN (4–8 digit)</label>');
-    form.appendChild(pinLabel);
+    form.appendChild(el('<label>PIN</label>'));
     form.appendChild(pinInput);
-    form.appendChild(el('<div class="form-actions"><button type="submit" class="btn btn-primary btn-block">Login Karein</button></div>'));
+    form.appendChild(el('<div class="form-actions"><button type="submit" class="btn btn-primary btn-block">Login</button></div>'));
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       const pin = pinInput.value.trim();
-      const u = this._selectedLoginUser;
-      if (!u) { this.notify('Issue — Pehle apna naam chunein', 'error'); return; }
-      if (pin.length < 4) { this.notify('Issue — PIN kam az kam 4 digit ka hona chahiye', 'error'); return; }
+      if (pin.length < 3) { this.notify('Issue — PIN kam az kam 3 digit ka hona chahiye', 'error'); return; }
       // PIN brute-force protection: 5 ghalat PIN ke baad ye login 15
       // minute ke liye lock ho jata hai. Lock data file me save hota
       // hai, is liye app band kar ke kholne se reset nahi hota — sirf
@@ -569,9 +767,12 @@ const App = {
     wrap.appendChild(form);
     wrap.appendChild(lockMsg);
     body.appendChild(wrap);
+    wrap.querySelector('#login-back-btn').addEventListener('click', () => {
+      this._selectedLoginUser = null;
+      this.renderLogin();
+    });
     showLockMsg();
-    // After a session lock, the PIN field is focused straight away.
-    if (this._selectedLoginUser) { try { pinInput.focus(); } catch (e) { /* ignore */ } }
+    try { pinInput.focus(); } catch (e) { /* ignore */ }
   },
 
   // One-click restore from the login screen — no login needed, for the
@@ -595,17 +796,17 @@ const App = {
   ownerSetupForm() {
     const wrap = el('<div></div>');
     wrap.appendChild(el('<h3 style="text-align:left">Owner Setup</h3>'));
-    wrap.appendChild(el('<p class="muted" style="text-align:left">Pehli dafa setup: Owner ka naam, username aur 4–8 digit ka PIN banayein. Koi default PIN nahi hai.</p>'));
+    wrap.appendChild(el('<p class="muted" style="text-align:left">Pehli dafa setup: Owner ka naam, username aur 3–8 digit ka PIN banayein. Koi default PIN nahi hai.</p>'));
     const form = el('<form></form>');
     const nameIn = el('<input class="input" type="text" required placeholder="Owner ka naam">');
     const userIn = el('<input class="input" type="text" required placeholder="Username">');
-    const pinIn = el('<input class="input pin-input" type="password" inputmode="numeric" maxlength="8" required placeholder="PIN (4–8 digit)">');
+    const pinIn = el('<input class="input pin-input" type="password" inputmode="numeric" maxlength="8" required placeholder="PIN (3–8 digits)">');
     const pin2In = el('<input class="input pin-input" type="password" inputmode="numeric" maxlength="8" required placeholder="PIN dobara likhein">');
-    form.appendChild(el('<label>Naam</label>')); form.appendChild(nameIn);
+    form.appendChild(el('<label>Name</label>')); form.appendChild(nameIn);
     form.appendChild(el('<label>Username</label>')); form.appendChild(userIn);
-    form.appendChild(el('<label>PIN (4–8 digit)</label>')); form.appendChild(pinIn);
-    form.appendChild(el('<label>PIN Confirm Karein</label>')); form.appendChild(pin2In);
-    form.appendChild(el('<div class="form-actions"><button type="submit" class="btn btn-primary btn-block">Owner Account Banayein</button></div>'));
+    form.appendChild(el('<label>PIN (3–8 digits)</label>')); form.appendChild(pinIn);
+    form.appendChild(el('<label>Confirm PIN</label>')); form.appendChild(pin2In);
+    form.appendChild(el('<div class="form-actions"><button type="submit" class="btn btn-primary btn-block">Create Owner Account</button></div>'));
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       const name = nameIn.value.trim();
@@ -613,7 +814,7 @@ const App = {
       const pin = pinIn.value.trim();
       const pin2 = pin2In.value.trim();
       if (!name || !username) { this.notify('Issue — Naam aur username zaroori hain', 'error'); return; }
-      if (!/^\d{4,8}$/.test(pin)) { this.notify('Issue — PIN sirf 4–8 digit ka hona chahiye', 'error'); return; }
+      if (!/^\d{3,8}$/.test(pin)) { this.notify('Issue — PIN sirf 3–8 digit ka hona chahiye', 'error'); return; }
       if (pin !== pin2) { this.notify('Issue — Dono PIN match nahi karte', 'error'); return; }
       if (DB.checkUniqueness) {
         const chk = DB.checkUniqueness('appUsers', { username }, null);
@@ -701,6 +902,7 @@ const App = {
     const overlay = document.getElementById('bill-preview-overlay');
     const bodyEl = document.getElementById('bill-preview-body');
     const printBtn = document.getElementById('bill-preview-print');
+    const pdfBtn = document.getElementById('bill-preview-pdf');
     const closeBtn = document.getElementById('bill-preview-close');
     const xBtn = document.getElementById('bill-preview-x');
     if (!overlay || !bodyEl) return false;
@@ -710,6 +912,16 @@ const App = {
     const close = () => { overlay.hidden = true; overlay.style.display = 'none'; };
     if (xBtn) xBtn.onclick = close;
     if (closeBtn) closeBtn.onclick = close;
+    if (pdfBtn) {
+      pdfBtn.onclick = () => {
+        // PDF save: the browser print dialog lets the user choose
+        // "Save as PDF" — the 80mm @page rule prints only the bill.
+        const area = document.getElementById('receipt-print');
+        if (area) area.innerHTML = html;
+        try { window.print(); } catch (e) { /* ignore */ }
+        this.notify('Print dialog khul gaya — PDF save karne ke liye "Save as PDF" chunein', 'info');
+      };
+    }
     if (printBtn) {
       printBtn.onclick = async () => {
         let ok = false;
@@ -793,7 +1005,7 @@ const App = {
       const yesBtn = document.getElementById('confirm-yes');
       const noBtn = document.getElementById('confirm-no');
       if (!overlay) { resolve(window.confirm(text || title)); return; }
-      tEl.textContent = title || 'Confirm Karein';
+      tEl.textContent = title || 'Confirm';
       xEl.textContent = text || '';
       overlay.hidden = false;
       overlay.style.display = 'flex';

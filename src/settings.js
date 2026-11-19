@@ -1,4 +1,4 @@
-/* Sahara Bakers — Settings (v1.0.0).
+/* Sahara Bakers — Settings (v2.0.0).
  * Business settings (name/address/phone), Notifications — Low Stock
  * card (notices ON/OFF + Default Low Stock Limit + Save; an item's own
  * limit always wins), Backup & Restore card (Backup Now, Restore
@@ -18,7 +18,7 @@ function notify(m, t) { window.App.notify(m, t); }
 function esc(s) { return window.esc(s); }
 function el(html) { return window.el(html); }
 
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '2.0.0';
 
 function renderSettings(container) {
   container.innerHTML = '';
@@ -34,10 +34,10 @@ function renderSettings(container) {
   const nameIn = el('<input class="input" type="text" value="' + esc(settings.businessName || '') + '">');
   const addrIn = el('<input class="input" type="text" value="' + esc(settings.address || '') + '" placeholder="Address">');
   const phoneIn = el('<input class="input" type="text" value="' + esc(settings.phone || '') + '" placeholder="Phone">');
-  bForm.appendChild(el('<label>Business Ka Naam</label>')); bForm.appendChild(nameIn);
+  bForm.appendChild(el('<label>Business Name</label>')); bForm.appendChild(nameIn);
   bForm.appendChild(el('<label>Address</label>')); bForm.appendChild(addrIn);
   bForm.appendChild(el('<label>Phone</label>')); bForm.appendChild(phoneIn);
-  bForm.appendChild(el('<div class="form-actions"><button type="submit" class="btn btn-primary">Save Karein</button></div>'));
+  bForm.appendChild(el('<div class="form-actions"><button type="submit" class="btn btn-primary">Save</button></div>'));
   bForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const name = nameIn.value.trim();
@@ -59,7 +59,7 @@ function renderSettings(container) {
   nForm.appendChild(onOff);
   nForm.appendChild(el('<label>Default Low Stock Limit</label>')); nForm.appendChild(limitIn);
   nForm.appendChild(el('<p class="muted">Item ki apni limit pehle lagti hai — jo item par limit lagi ho, wohi use hoti hai. Default limit sirf un items ke liye hai jin par apni limit nahi lagi.</p>'));
-  nForm.appendChild(el('<div class="form-actions"><button type="submit" class="btn btn-primary">Save Karein</button></div>'));
+  nForm.appendChild(el('<div class="form-actions"><button type="submit" class="btn btn-primary">Save</button></div>'));
   nForm.addEventListener('submit', (e) => {
     e.preventDefault();
     settings.lowStockNotifications = !!nForm.querySelector('#low-notif-on').checked;
@@ -75,7 +75,7 @@ function renderSettings(container) {
   const prForm = el('<form></form>');
   const prSel = el('<select class="input" id="printer-select"><option value="">Printer chunein…</option></select>');
   prForm.appendChild(el('<label>Printer</label>')); prForm.appendChild(prSel);
-  prForm.appendChild(el('<div class="form-actions"><button type="submit" class="btn btn-primary">Save Karein</button></div>'));
+  prForm.appendChild(el('<div class="form-actions"><button type="submit" class="btn btn-primary">Save</button></div>'));
   prForm.addEventListener('submit', (e) => {
     e.preventDefault();
     settings.printerName = prSel.value || '';

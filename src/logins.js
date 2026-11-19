@@ -1,8 +1,8 @@
-/* Sahara Bakers — Logins (v1.0.0).
+/* Sahara Bakers — Logins (v2.0.0).
  * Details only (Naam, Username, Role, Branch) — no badges or inline
  * edit forms. Change PIN button (with a wrong-current-PIN notice) and
  * a create-login form (Naam, Username, PIN, Role, Branch) with PIN
- * validation (4–8 digits, notice on invalid). Wrapped in an IIFE.
+ * validation (3–8 digits, notice on invalid). Wrapped in an IIFE.
  */
 (function () {
 'use strict';
@@ -54,12 +54,12 @@ function renderLogins(container) {
     bodyEl.innerHTML = '';
     const form = el('<form></form>');
     const curIn = el('<input class="input pin-input" type="password" inputmode="numeric" maxlength="8" required placeholder="Maujooda PIN">');
-    const newIn = el('<input class="input pin-input" type="password" inputmode="numeric" maxlength="8" required placeholder="Naya PIN (4–8 digit)">');
+    const newIn = el('<input class="input pin-input" type="password" inputmode="numeric" maxlength="8" required placeholder="Naya PIN (3–8 digit)">');
     const new2In = el('<input class="input pin-input" type="password" inputmode="numeric" maxlength="8" required placeholder="Naya PIN dobara likhein">');
     form.appendChild(el('<label>Maujooda PIN</label>')); form.appendChild(curIn);
-    form.appendChild(el('<label>Naya PIN (4–8 digit)</label>')); form.appendChild(newIn);
-    form.appendChild(el('<label>Naya PIN Confirm Karein</label>')); form.appendChild(new2In);
-    const row = el('<div class="form-actions"><button type="submit" class="btn btn-primary">PIN Change Karein</button><button type="button" class="btn" id="pin-cancel">Cancel</button></div>');
+    form.appendChild(el('<label>Naya PIN (3–8 digit)</label>')); form.appendChild(newIn);
+    form.appendChild(el('<label>Confirm New PIN</label>')); form.appendChild(new2In);
+    const row = el('<div class="form-actions"><button type="submit" class="btn btn-primary">Change PIN</button><button type="button" class="btn" id="pin-cancel">Cancel</button></div>');
     form.appendChild(row);
     form.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -71,7 +71,7 @@ function renderLogins(container) {
       let ok = false;
       try { ok = DB.checkPin ? DB.checkPin(u, cur) : false; } catch (e) { ok = false; }
       if (!ok) { notify('Issue — Maujooda PIN ghalat hai', 'error'); return; }
-      if (!/^\d{4,8}$/.test(np)) { notify('Issue — PIN 4 se 8 number ka hona chahiye', 'error'); return; }
+      if (!/^\d{3,8}$/.test(np)) { notify('Issue — PIN 3 se 8 number ka hona chahiye', 'error'); return; }
       if (np !== np2) { notify('Issue — Dono naye PIN match nahi karte', 'error'); return; }
       u.pinHash = DB.hashPin(np);
       window.App.save();
@@ -90,14 +90,14 @@ function renderLogins(container) {
   const form = el('<form></form>');
   const nameIn = el('<input class="input" type="text" required placeholder="Naam (jaise Ahmed)">');
   const userIn = el('<input class="input" type="text" required placeholder="Username (jaise ahmed)">');
-  const pinIn = el('<input class="input pin-input" type="password" inputmode="numeric" maxlength="8" required placeholder="PIN (4–8 digit)">');
+  const pinIn = el('<input class="input pin-input" type="password" inputmode="numeric" maxlength="8" required placeholder="PIN (3–8 digit)">');
   const roleSel = el('<select class="input">' + ROLES.map((r) => '<option value="' + r + '"' + (r === 'Warehouse Staff' ? ' selected' : '') + '>' + r + '</option>').join('') + '</select>');
   const branchSel = el('<select class="input"><option value="">Sab Branches (Owner / Manager)</option>' + branches.map((b) =>
     '<option value="' + esc(b.id) + '">' + esc(b.name) + '</option>'
   ).join('') + '</select>');
   form.appendChild(el('<label>Naam</label>')); form.appendChild(nameIn);
   form.appendChild(el('<label>Username</label>')); form.appendChild(userIn);
-  form.appendChild(el('<label>PIN (4–8 digit)</label>')); form.appendChild(pinIn);
+  form.appendChild(el('<label>PIN (3–8 digit)</label>')); form.appendChild(pinIn);
   form.appendChild(el('<label>Role</label>')); form.appendChild(roleSel);
   form.appendChild(el('<label>Branch</label>')); form.appendChild(branchSel);
   form.appendChild(el('<div class="form-actions"><button type="submit" class="btn btn-primary">Login Banayein</button></div>'));
@@ -108,7 +108,7 @@ function renderLogins(container) {
     const pin = pinIn.value.trim();
     const role = roleSel.value;
     if (!name || !username) { notify('Issue — Naam aur username zaroori hain', 'error'); return; }
-    if (!/^\d{4,8}$/.test(pin)) { notify('Issue — PIN 4 se 8 number ka hona chahiye', 'error'); return; }
+    if (!/^\d{3,8}$/.test(pin)) { notify('Issue — PIN 3 se 8 number ka hona chahiye', 'error'); return; }
     if (DB.checkUniqueness) {
       const chk = DB.checkUniqueness('appUsers', { username }, null);
       if (!chk.ok) { notify('Issue — ' + chk.message, 'error'); return; }

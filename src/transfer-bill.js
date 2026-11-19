@@ -1,4 +1,4 @@
-/* Sahara Bakers — Branch Transfer Bill (v1.0.0).
+/* Sahara Bakers — Branch Transfer Bill (v2.0.0).
  * When stock goes from the Warehouse (godown) to a branch, a thermal
  * bill is generated: shown automatically as a preview modal right
  * after the transfer is created (same flow as RARA), re-printable
@@ -8,8 +8,9 @@
  * path (ui.js showBillPreviewHtml / printReceiptHtml), so preview and
  * printed bill always match.
  * Bill content: Bill No (SB-XXXX), date/time, From Warehouse → To
- * branch, Sent By, then ALL items — Item | Qty × Price = Line Total —
- * then TOTAL VALUE. Prices are the item's CURRENT price: a price that
+ * branch, Sent By, Received By, Issued By, then ALL items — Item |
+ * Qty × Price = Line Total — then TOTAL ITEMS and GRAND TOTAL /
+ * STOCK VALUE. Prices are the item's CURRENT price: a price that
  * is blank (null) is NEVER invented — the line shows the quantity and
  * no invented amount, and the bill carries a plain note so the Owner
  * knows to set the price in Items > Edit Item.
@@ -42,6 +43,11 @@ function fmtDate(iso) {
   } catch (e) { return String(iso || '—'); }
 }
 function branchName(id) {
+  // The Warehouse is a real location separate from the 3 branches:
+  // its bill name is always "Warehouse", never a branch name. This
+  // local check runs before the App.branchName fallback so the From
+  // line can never read "Branch 1" even if the App helper is absent.
+  if (String(id) === 'warehouse') return 'Warehouse';
   try {
     if (window.App && window.App.branchName) {
       const n = window.App.branchName(id);
@@ -78,14 +84,17 @@ function transferBillHtml(transfer) {
     '<div>From: ' + esc(branchName(transfer.fromBranchId)) + '</div>' +
     '<div>To: ' + esc(branchName(transfer.toBranchId)) + '</div>' +
     (transfer.createdBy ? '<div>Sent By: ' + esc(transfer.createdBy) + '</div>' : '') +
+    (transfer.issuedBy ? '<div>Issued By: ' + esc(transfer.issuedBy) + '</div>' : '') +
+    (transfer.receivedBy ? '<div>Received By: ' + esc(transfer.receivedBy) + '</div>' : '') +
     '<div class="r-line"></div>' +
     '<table><thead><tr><th>Item</th><th class="r-right">Total</th></tr></thead><tbody>' + rows + '</tbody></table>' +
     '<div class="r-line"></div>' +
     '<table>' +
-    '<tr><td class="r-bold">TOTAL VALUE</td><td class="r-right r-bold">' + (vals.totals.valueKnown ? money(vals.totals.value) : money(vals.totals.value) + ' *') + '</td></tr>' +
+    '<tr><td class="r-bold">TOTAL ITEMS</td><td class="r-right r-bold">' + vals.totals.qty + '</td></tr>' +
+    '<tr><td class="r-bold">GRAND TOTAL / STOCK VALUE</td><td class="r-right r-bold">' + (vals.totals.valueKnown ? money(vals.totals.value) : money(vals.totals.value) + ' *') + '</td></tr>' +
     '</table>' +
     (vals.priceMissing
-      ? '<div class="r-line"></div><div>Note: kuch items ki price abhi blank hai — Items &gt; Edit Item mein price set karein, warna total value poori nahi dikhegi. (* = kuch lines ki price blank hai)</div>'
+      ? '<div class="r-line"></div><div>Note: kuch items ki price abhi blank hai — Product Details mein price set karein, warna total value poori nahi dikhegi. (* = kuch lines ki price blank hai)</div>'
       : '') +
     '<div class="r-line"></div>' +
     '<div class="r-center">Sahara Bakers — Godown Stock</div>';

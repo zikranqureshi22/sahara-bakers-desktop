@@ -1,4 +1,4 @@
-// Sahara Bakers — database layer (v1.0.0).
+// Sahara Bakers — database layer (v2.0.0).
 //
 // Single local JSON store, copied from the RARA POS v1.1.9 hardening
 // (the 2026-11-15 data-loss lesson). In Electron the data file lives in
@@ -23,16 +23,31 @@
 //                        empty one
 //   DB.restoreLatestBackup()  restores the newest GOOD backup, with
 //                        { ok, at, name, products, logins }
-//   DB.transferBillValues(transfer, products)  per-item price values
-//                        for the thermal transfer bill
+//   DB.completeProduction({finishProductId, finishQty, lines, createdBy, clientRef})
+//                        validate-then-apply raw->finish conversion:
+//                        rejects over-stock with NO stock moved; on
+//                        success deducts raw at the Warehouse, adds the
+//                        finish, records the production (bill PB-XXXX)
+//                        and one movement per leg (clientRef deduped)
+//   DB.productionBillNo(production)  'PB-0001' ...
+//   DB.WAREHOUSE_ID    'warehouse' — the Warehouse/Godown location.
+//                        It is a REAL location, separate from the 3
+//                        branches: stock lives in branchStocks rows
+//                        with branchId 'warehouse', exactly like a
+//                        branch id, but it is NOT a branch record —
+//                        it never appears in the branch list, the
+//                        header branch selector, or a transfer To
+//                        dropdown. Transfers always start HERE.
 //
 // State shape:
-//   products, branches, stockMovements, transfers, purchases,
-//   purchaseLines, suppliers, appUsers, loginSecurity, settings
+//   products, branches, stockMovements, transfers, productions,
+//   purchases, purchaseLines, suppliers, appUsers, loginSecurity, settings
 // Product: {id, name, price, purchasePrice, category, type ('raw' |
 // 'finished'), unit, sku, barcode, lowThreshold, status, image,
-// stock, branchStocks:[{branchId, qty}]}. Prices are null until the
-// user enters them in-app — never invented.
+// stock, branchStocks:[{branchId, qty}]}. A branchStocks row whose
+// branchId is DB.WAREHOUSE_ID ('warehouse') is warehouse stock;
+// rows with a numeric branchId are that branch's stock. Prices are
+// null until the user enters them in-app — never invented.
 // Indexes are in-memory only and are never written to the JSON file.
 
 const fs = require('fs');
@@ -75,6 +90,7 @@ function emptyState() {
     branches: [],
     stockMovements: [],
     transfers: [],
+    productions: [],
     purchases: [],
     purchaseLines: [],
     suppliers: [],
@@ -102,6 +118,14 @@ const DB = {
   state: emptyState(),
   dataFile: DATA_FILE,
   backupDir: BACKUP_DIR,
+  // The Warehouse/Godown is a REAL location, separate from the 3
+  // branches (Branch 1, Branch 2, Branch 3). Its id is the string
+  // 'warehouse' — stored in branchStocks rows, movements, transfers
+  // and purchases exactly like a branch id, but it is NOT a branch
+  // record (see the header comment). Never hard-code the string
+  // elsewhere; always use DB.WAREHOUSE_ID.
+  WAREHOUSE_ID: 'warehouse',
+  WAREHOUSE_NAME: 'Warehouse',
   // Set by load(): true when the data was recovered from a backup/seed.
   recoveredFromBackup: false,
   loadError: null,
@@ -153,7 +177,7 @@ const DB = {
       if (u.username) idx.userByUsername.set(norm(u.username), u);
       trackMax('appUsers', u.id);
     });
-    ['transfers', 'purchases', 'purchaseLines'].forEach((coll) => {
+    ['transfers', 'productions', 'purchases', 'purchaseLines'].forEach((coll) => {
       (st[coll] || []).forEach((r) => trackMax(coll, r.id));
     });
     this.indexes = idx;
@@ -336,6 +360,103 @@ const DB = {
     } else {
       this.state = emptyState();
       this.save();
+    }
+    // v2.0.0 one-time migration (flag-guarded by
+    // settings.v200SeedMigrated, so it runs exactly once on a v1.0.0
+    // data file and never again). Fresh v2.0.0 seeds already carry the
+    // flag as true, so this is a no-op for them.
+    //  - Auth: the single v1 PIN 3333 Owner becomes PIN 1234, and a
+    //    Manager login (username 'manager', PIN 123) is added. The
+    //    hash scheme is unchanged: sha256(pin + ':sahara-bakers-salt').
+    //    Any other existing PIN (e.g. a user-changed Owner PIN) is
+    //    left untouched — only the exact 3333 hash is replaced.
+    //  - Branches: the old v1 names become Branch 1 / Branch 2 /
+    //    Branch 3 (only the exact old names are renamed; a name the
+    //    user chose himself is kept).
+    //  - Live prices: Cheese (id 18) price 8000 / purchasePrice 5000
+    //    with unit '1 Kg', Bakery Cake (id 55) price 9000 /
+    //    purchasePrice 7000 with unit '10 Pieces' — but ONLY when the
+    //    item still has no prices at all, so a price the user entered
+    //    in-app is never overwritten.
+    if (!this.state.settings || !this.state.settings.v200SeedMigrated) {
+      try {
+        let changed = false;
+        const users = this.state.appUsers || [];
+        const owner3333 = users.find((u) => u.pinHash === this.hashPin('3333'));
+        if (owner3333) { owner3333.pinHash = this.hashPin('1234'); changed = true; }
+        const hasManager = users.some((u) => String(u.username || '').toLowerCase() === 'manager' || u.role === 'Manager');
+        if (!hasManager && users.length > 0) {
+          users.push({ id: this.nextId('appUsers'), name: 'Manager', username: 'manager',
+            pinHash: this.hashPin('123'), role: 'Manager', branchId: null, branchName: null, isActive: true });
+          changed = true;
+        }
+        const renameBranch = (id, oldName, newName) => {
+          const b = (this.state.branches || []).find((x) => String(x.id) === String(id));
+          if (b && String(b.name || '').trim().toLowerCase() === oldName) { b.name = newName; changed = true; }
+        };
+        renameBranch(1, 'sahara backers railway road', 'Branch 1');
+        renameBranch(2, 'tehzeeb cafe', 'Branch 2');
+        const priceIfBlank = (id, price, purchasePrice, unit) => {
+          const p = (this.state.products || []).find((x) => String(x.id) === String(id));
+          if (p && p.price == null && p.purchasePrice == null) {
+            p.price = price; p.purchasePrice = purchasePrice; changed = true;
+            if (unit && p.unit !== unit) { p.unit = unit; }
+          }
+        };
+        priceIfBlank(18, 8000, 5000, '1 Kg');
+        priceIfBlank(55, 9000, 7000, '10 Pieces');
+        if (!this.state.settings) this.state.settings = {};
+        this.state.settings.v200SeedMigrated = true;
+        if (changed) { try { this.save(); } catch (e) { /* migration lives in memory until the next save */ } }
+      } catch (e) { /* a failed migration must never block loading */ }
+    }
+    // v2.0.0 -> v2.0.1 Warehouse migration (flag-guarded by
+    // settings.v201WarehouseMigrated, so it runs exactly once and
+    // never again). In v1.0.0 and v2.0.0 Branch 1 WAS the warehouse
+    // by convention: stock lived in branchStocks rows with
+    // branchId 1, and movements/transfers/purchases pointed at
+    // branch 1. The warehouse is now a REAL separate location
+    // (DB.WAREHOUSE_ID, 'warehouse'), so branch-1 stock becomes
+    // warehouse stock:
+    //  - per product, the branch-1 qty moves into the warehouse row
+    //    (added to any warehouse qty already there — never
+    //    duplicated, never lost) and the branch-1 row is removed;
+    //  - stock movements, transfers (from AND to) and purchases at
+    //    branch 1 are re-pointed to 'warehouse'.
+    // Branch 1 itself stays a normal branch — after the migration
+    // its stock is 0 until a transfer sends stock to it. Totals
+    // never change: the move is a re-label, not a copy. User
+    // branchIds (Branch-role logins) are NOT touched — a login
+    // tied to Branch 1 is a real branch login, not the warehouse.
+    // Fresh seeds already carry the flag as true, so this is a
+    // no-op for them.
+    if (!this.state.settings || !this.state.settings.v201WarehouseMigrated) {
+      try {
+        let changed = false;
+        const W = this.WAREHOUSE_ID;
+        const isB1 = (v) => String(v) === '1';
+        (this.state.products || []).forEach((p) => {
+          const rows = p.branchStocks || [];
+          const b1 = rows.find((r) => isB1(r.branchId));
+          if (!b1) return;
+          const qty = Number(b1.qty) || 0;
+          const wh = rows.find((r) => String(r.branchId) === W);
+          if (wh) wh.qty = (Number(wh.qty) || 0) + qty;
+          else rows.push({ branchId: W, qty });
+          rows.splice(rows.indexOf(b1), 1);
+          this.recalcProductStock(p);
+          changed = true;
+        });
+        (this.state.stockMovements || []).forEach((m) => { if (isB1(m.branchId)) { m.branchId = W; changed = true; } });
+        (this.state.transfers || []).forEach((t) => {
+          if (isB1(t.fromBranchId)) { t.fromBranchId = W; changed = true; }
+          if (isB1(t.toBranchId)) { t.toBranchId = W; changed = true; }
+        });
+        (this.state.purchases || []).forEach((pu) => { if (isB1(pu.branchId)) { pu.branchId = W; changed = true; } });
+        if (!this.state.settings) this.state.settings = {};
+        this.state.settings.v201WarehouseMigrated = true;
+        if (changed) { try { this.save(); } catch (e) { /* migration lives in memory until the next save */ } }
+      } catch (e) { /* a failed migration must never block loading */ }
     }
     // Settings defaults for older data files.
     if (!this.state.settings) this.state.settings = {};
@@ -632,6 +753,97 @@ const DB = {
     return { rows: rows, totals: totals, priceMissing: priceMissing };
   },
 
+  // Bill number for a production: PB-0001, PB-0002, ... (id-based,
+  // same pattern as the transfer bill SB-XXXX).
+  productionBillNo(production) {
+    return 'PB-' + String(production.id == null ? '' : production.id).padStart(4, '0');
+  },
+
+  // Raw -> Finish production, as ONE validated transaction.
+  //   completeProduction({ finishProductId, finishQty, lines, createdBy, clientRef, warehouseBranchId })
+  //   lines: [{ productId, qty }] — raw items and the quantity of
+  //   each used. warehouseBranchId defaults to DB.WAREHOUSE_ID
+  //   (the real Warehouse location, separate from the 3 branches).
+  // Validation runs FIRST and rejects the whole cart when ANY line
+  // is short — over-stock is rejected with NO stock moved at all.
+  // On success: raw is deducted at the Warehouse, the finish is
+  // added at the Warehouse, one stockMovement per leg is recorded
+  // (clientRef deduped, so a double submit cannot double-count),
+  // and a production record is stored with the bill number.
+  // Costing uses each raw item's purchasePrice; a line whose
+  // purchasePrice is null contributes no cost and makes costKnown
+  // false — no cost is ever invented. costPerUnit = totalCost /
+  // finishQty when the full cost is known, else null.
+  // Returns { ok: true, production } or { ok: false, message }.
+  completeProduction(opts) {
+    const finishQty = Number(opts && opts.finishQty) || 0;
+    const lines = (opts && Array.isArray(opts.lines)) ? opts.lines : [];
+    const warehouseId = (opts && opts.warehouseBranchId != null) ? opts.warehouseBranchId : this.WAREHOUSE_ID;
+    const finish = this.productById(opts && opts.finishProductId);
+    if (!finish) return { ok: false, message: 'Finish item nahi mila — pehle finish item chunein.' };
+    if (finish.type !== 'finished') return { ok: false, message: '"' + (finish.name || '') + '" finish item nahi hai — Production sirf Finish Goods ke liye hai.' };
+    if (!finishQty || finishQty <= 0) return { ok: false, message: 'Bani hui miqdaar durust likhein (0 se zyada).' };
+    if (lines.length === 0) return { ok: false, message: 'Pehle cart mein kam az kam aik raw item add karein.' };
+    // Idempotency FIRST (before the stock check): the same clientRef
+    // completed before returns the original production instead of
+    // producing twice. A retry after success would otherwise fail
+    // the stock check, because the raw is already deducted.
+    const clientRef = (opts && opts.clientRef) || null;
+    if (clientRef) {
+      const prev = (this.state.productions || []).find((p) => p.clientRef === clientRef);
+      if (prev) return { ok: true, production: prev, duplicate: true };
+    }
+    // ---- validate every line BEFORE moving anything ----
+    const checked = [];
+    for (const ln of lines) {
+      const qty = Number(ln.qty) || 0;
+      const raw = this.productById(ln.productId);
+      if (!raw) return { ok: false, message: 'Raw item nahi mila (id ' + ln.productId + ').' };
+      if (raw.type !== 'raw') return { ok: false, message: '"' + (raw.name || '') + '" raw item nahi hai.' };
+      if (!qty || qty <= 0) return { ok: false, message: '"' + (raw.name || '') + '" ki miqdaar durust likhein.' };
+      const avail = this.stockOf(raw, warehouseId);
+      if (qty > avail && !(this.state.settings && this.state.settings.allowNegativeStock)) {
+        return { ok: false, message: '"' + (raw.name || '') + '" ka itna stock nahi hai — godown mein sirf ' + avail + ' ' + (raw.unit || '') + ' hai, aap ne ' + qty + ' manga hai. Kuch bhi move nahi hua.' };
+      }
+      const pp = (raw.purchasePrice != null && !isNaN(Number(raw.purchasePrice))) ? Number(raw.purchasePrice) : null;
+      checked.push({ productId: raw.id, name: raw.name, qty, unit: raw.unit || '', purchasePrice: pp, lineCost: pp == null ? null : qty * pp, availableBefore: avail });
+    }
+    const totalCost = checked.reduce((a, l) => a + (l.lineCost == null ? 0 : l.lineCost), 0);
+    const costKnown = checked.every((l) => l.lineCost != null);
+    const id = this.nextId('productions');
+    const billNo = 'PB-' + String(id).padStart(4, '0');
+    const now = new Date().toISOString();
+    const createdBy = (opts && opts.createdBy) || '';
+    const remainingRaw = checked.map((l) => {
+      const raw = this.productById(l.productId);
+      return { productId: l.productId, name: l.name, unit: l.unit, usedQty: l.qty, remaining: this.stockOf(raw, warehouseId) - l.qty };
+    });
+    // ---- apply: deduct raw, add finish, record movements ----
+    checked.forEach((l) => {
+      const raw = this.productById(l.productId);
+      this.setStock(raw, warehouseId, this.stockOf(raw, warehouseId) - l.qty);
+      this.addMovement({ productId: raw.id, productName: raw.name, branchId: warehouseId, qty: -l.qty,
+        reason: 'Production ' + billNo + ' — ' + finish.name + ' banane mein use hua', user: createdBy,
+        reference: billNo, clientRef: clientRef ? clientRef + ':raw:' + raw.id : null });
+    });
+    this.setStock(finish, warehouseId, this.stockOf(finish, warehouseId) + finishQty);
+    this.addMovement({ productId: finish.id, productName: finish.name, branchId: warehouseId, qty: finishQty,
+      reason: 'Production ' + billNo + ' — tayyar hua', user: createdBy,
+      reference: billNo, clientRef: clientRef ? clientRef + ':finish:' + finish.id : null });
+    const finalFinishStock = this.stockOf(finish, warehouseId);
+    const production = {
+      id, billNo, date: now, finishProductId: finish.id, finishName: finish.name,
+      finishQty, finishUnit: finish.unit || '',
+      lines: checked, totalCost, costKnown,
+      costPerUnit: costKnown && finishQty > 0 ? totalCost / finishQty : null,
+      remainingRaw, finalFinishStock, warehouseBranchId: warehouseId,
+      createdBy, clientRef
+    };
+    if (!Array.isArray(this.state.productions)) this.state.productions = [];
+    this.state.productions.unshift(production);
+    return { ok: true, production };
+  },
+
   /* ---------- stock ---------- */
   // Total stock of a product across branches when branchId is omitted;
   // the stock held at one branch when it is given.
@@ -658,7 +870,16 @@ const DB = {
     this.recalcProductStock(product);
   },
 
+  // Duplicate-stock-entry protection: a movement that carries a
+  // clientRef (one stable id per transaction leg, e.g. a production
+  // or transfer leg) is recorded at most ONCE — a second add with
+  // the same clientRef returns the existing record and moves no
+  // stock. Movements without a clientRef behave exactly as before.
   addMovement(movement) {
+    if (movement && movement.clientRef) {
+      const dup = (this.state.stockMovements || []).find((m) => m.clientRef === movement.clientRef);
+      if (dup) return dup;
+    }
     const now = new Date().toISOString();
     const record = {
       id: this.nextId('stockMovements'),
@@ -669,7 +890,8 @@ const DB = {
       date: movement.date || now,
       reason: movement.reason || '',
       user: movement.user || '',
-      reference: movement.reference || ''
+      reference: movement.reference || '',
+      clientRef: movement.clientRef || null
     };
     this.state.stockMovements.push(record);
     // Keep the movement index in step without a full rebuild.
@@ -684,6 +906,42 @@ const DB = {
       if (typeof idx.maxId.stockMovements !== 'number' || record.id > idx.maxId.stockMovements) idx.maxId.stockMovements = record.id;
     }
     return record;
+  },
+
+  // ---- "Sold" per branch (Branches screen) ----
+  // A stock movement counts as a SALE only when it is an explicit
+  // Stock Out: a negative movement that is NOT a transfer leg and
+  // NOT a production leg. Stock movements carry no `kind` field, so
+  // the rule is decided by the movement's reason prefix — the only
+  // marker each writer sets (see completeProduction and
+  // transfer.js). In particular, production raw consumption
+  // (reason 'Production PB-0001 — ...', recorded at the Warehouse)
+  // is NOT a sale: the raw was consumed to make a finish
+  // item, not sold. Counting it as sold inflated the "Sold"
+  // figure for the location holding the raw stock. The same
+  // applies to stock corrections from item edits (reasons
+  // 'Raw Item Edit — stock set' / 'Finish Item Edit — stock
+  // set', written by raw.js and finished.js when an edit changes
+  // a quantity): a correction is not a sale either. Positive
+  // movements (stock in, finish produced) never count as sold.
+  isSaleMovement(m) {
+    if (!m || Number(m.qty) >= 0) return false;
+    const reason = String(m.reason || '');
+    if (reason.indexOf('Transfer') === 0) return false; // transfer leg, not a sale
+    if (reason.indexOf('Production') === 0) return false; // production consumption, not a sale
+    if (reason.indexOf('Raw Item Edit') === 0) return false; // stock correction, not a sale
+    if (reason.indexOf('Finish Item Edit') === 0) return false; // stock correction, not a sale
+    return true;
+  },
+
+  // Total units sold at one branch: |qty| of that branch's sale
+  // movements only (see isSaleMovement). Used by the Branches
+  // screen; kept here (not in branches.js) so the rule is defined
+  // once and unit-testable from the Node DB suite.
+  soldQtyForBranch(branchId) {
+    return (this.state.stockMovements || [])
+      .filter((m) => String(m.branchId) === String(branchId) && this.isSaleMovement(m))
+      .reduce((a, m) => a + Math.abs(Number(m.qty) || 0), 0);
   },
 
   movementsInRange(fromISO, toISO, branchId) {

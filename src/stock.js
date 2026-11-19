@@ -1,4 +1,4 @@
-/* Sahara Bakers — Stock In/Out + Stock levels (v1.0.0).
+/* Sahara Bakers — Stock In/Out + Stock levels (v2.0.0).
  * Stock In/Out: a simple form — Item + Miqdaar + Save only. Extra
  * details sit behind "Aur Details (optional)". Before saving, a
  * preview shows "Abhi godown mein: X — save ke baad kul Y". After
@@ -40,7 +40,6 @@ function renderStockIO(container) {
   const st = S();
   const products = st.products || [];
   const branches = st.branches || [];
-  const warehouseId = window.App.warehouseBranchId();
   const pendingId = window.App._pendingStockInProduct;
   window.App._pendingStockInProduct = null;
 
@@ -50,29 +49,31 @@ function renderStockIO(container) {
   const card = el('<div class="card"><h2>Stock Entry</h2></div>');
   const form = el('<form></form>');
   const itemSel = el('<select class="input" id="sio-item">' + productOptions(pendingId || (products[0] && products[0].id)) + '</select>');
-  const qtyIn = el('<input class="input" type="number" min="0" step="any" required placeholder="Miqdaar (jaise 5)">');
+  const qtyIn = el('<input class="input" type="number" min="0" step="any" required placeholder="Quantity (jaise 5)">');
   const dirSel = el('<select class="input"><option value="in">Stock In — Godown mein aaya</option><option value="out">Stock Out — Godown se gaya</option></select>');
-  const branchSel = el('<select class="input">' + branches.map((b) =>
-    '<option value="' + esc(b.id) + '"' + (String(b.id) === String(warehouseId) ? ' selected' : '') + '>' + esc(b.name) + '</option>'
+  // Warehouse is a real location, not a branch: it is the FIRST
+  // option (and the default), then the 3 branches.
+  const branchSel = el('<select class="input"><option value="warehouse" selected>Warehouse (Godown)</option>' + branches.map((b) =>
+    '<option value="' + esc(b.id) + '">' + esc(b.name) + '</option>'
   ).join('') + '</select>');
   // Extra details — hidden behind one toggle, never in the way.
-  const detailsToggle = el('<button type="button" class="btn btn-ghost btn-sm" id="sio-details-toggle">Aur Details (optional) +</button>');
+  const detailsToggle = el('<button type="button" class="btn btn-ghost btn-sm" id="sio-details-toggle">More Details (optional) +</button>');
   const details = el('<div id="sio-details" hidden></div>');
   const reasonIn = el('<input class="input" type="text" placeholder="Wajah / Note (optional)">');
   const refIn = el('<input class="input" type="text" placeholder="Reference — bill / invoice no (optional)">');
-  details.appendChild(el('<label>Wajah / Note</label>')); details.appendChild(reasonIn);
+  details.appendChild(el('<label>Reason / Note</label>')); details.appendChild(reasonIn);
   details.appendChild(el('<label>Reference</label>')); details.appendChild(refIn);
   const preview = el('<p class="muted" id="sio-preview"></p>');
   const confirmBox = el('<div id="sio-confirm" class="confirm-box-inline" hidden></div>');
 
   form.appendChild(el('<label>Item</label>')); form.appendChild(itemSel);
-  form.appendChild(el('<label>Miqdaar</label>')); form.appendChild(qtyIn);
+  form.appendChild(el('<label>Quantity</label>')); form.appendChild(qtyIn);
   form.appendChild(el('<label>Type</label>')); form.appendChild(dirSel);
   form.appendChild(el('<label>Branch / Godown</label>')); form.appendChild(branchSel);
   form.appendChild(detailsToggle);
   form.appendChild(details);
   form.appendChild(preview);
-  form.appendChild(el('<div class="form-actions"><button type="submit" class="btn btn-primary btn-block">Save Karein</button></div>'));
+  form.appendChild(el('<div class="form-actions"><button type="submit" class="btn btn-primary btn-block">Save</button></div>'));
   form.appendChild(confirmBox);
   card.appendChild(form);
   wrap.appendChild(card);
@@ -91,7 +92,7 @@ function renderStockIO(container) {
   detailsToggle.addEventListener('click', () => {
     const hidden = details.hidden;
     details.hidden = !hidden;
-    detailsToggle.textContent = hidden ? 'Aur Details (optional) −' : 'Aur Details (optional) +';
+    detailsToggle.textContent = hidden ? 'More Details (optional) −' : 'More Details (optional) +';
   });
 
   form.addEventListener('submit', (e) => {
@@ -147,9 +148,22 @@ function renderStock(container) {
   const st = S();
   const products = st.products || [];
   const branches = st.branches || [];
+  const warehouseId = window.App.warehouseBranchId();
 
   const wrap = el('<div></div>');
   wrap.appendChild(el('<div class="screen-head"><h1>Stock</h1></div>'));
+
+  // Warehouse first — a real location, separate from the 3 branches.
+  const whCard = el('<div class="card"><h2>Warehouse (Godown)</h2></div>');
+  const whRows = products.map((p) => {
+    const qty = window.App.stockOf(p, warehouseId);
+    const low = window.App.isLowStock(p, warehouseId);
+    const lim = window.App.lowLimitFor(p);
+    return '<tr class="' + (low ? 'low-row' : '') + '"><td>' + esc(p.name) + '</td><td>' + esc(p.unit || '') + '</td><td><b>' + qty + '</b>' + (low ? ' <span class="low-tag">Kam Stock</span>' : '') + '</td><td>' + esc(window.App.moneyOrDash(p.price)) + '</td></tr>' +
+      (low ? '<tr class="low-note-row"><td colspan="4">Kam Stock Notice — Warehouse mein sirf ' + qty + ' bacha hai (limit: ' + (lim == null ? '—' : lim) + ')</td></tr>' : '');
+  }).join('');
+  whCard.appendChild(el('<div class="table-wrap"><table><thead><tr><th>Item</th><th>Unit</th><th>Stock</th><th>Price</th></tr></thead><tbody>' + whRows + '</tbody></table></div>'));
+  wrap.appendChild(whCard);
 
   branches.forEach((b) => {
     const card = el('<div class="card"><h2>' + esc(b.name) + '</h2></div>');
