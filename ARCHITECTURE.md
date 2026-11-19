@@ -523,7 +523,9 @@ Two layers; both live in the evidence folders, not in the app repo.
    `':sahara-bakers-salt'`. Keep everything else in §3 verbatim — the
    hardening is the point of this brief.
 4. **Seed:** Sahara's 44 items (28 Raw Materials / 16 Finished Goods, white-bg
-   photos, prices blank), 3 branches (Warehouse + branches), logins (Owner
+   photos, prices blank), 3 branches (Branch 1/2/3) PLUS a separate
+   Warehouse/Godown location (`DB.WAREHOUSE_ID = 'warehouse'` — v2.0.0;
+   v1.0.0 wrongly used branch 1 as the godown), logins (Owner
    Rahmanullah etc.). Decide explicitly: password-free entry like the web app
    (skip the PIN screen, sign in as the existing Owner) — but keep the
    PIN/lockout code intact underneath so a password can be restored later.

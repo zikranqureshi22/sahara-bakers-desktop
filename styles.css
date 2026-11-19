@@ -1,6 +1,7 @@
-/* Sahara Bakers — renderer styles (v1.0.0).
- * Black & white theme: white background, black text/accents.
- * Dark mode = inverted. Big fonts (base 17.5px, bill 15px).
+/* Sahara Bakers — renderer styles (v2.0.0).
+ * WHITE clean professional theme: white backgrounds, dark text, one
+ * restrained gold-brown accent (from the Sahara logo). Dark mode is a
+ * dark slate with the same accent. Big fonts (base 17.5px, bill 15px).
  * Simple and professional, minimal/no emoji.
  * Fully offline: system fonts only, no CDN. */
 * { box-sizing: border-box; }
@@ -8,26 +9,27 @@
 [hidden] { display: none !important; }
 
 :root {
-  --accent: #000000;
-  --primary: #000000;
+  --accent: #8a6d1f;
+  --primary: #8a6d1f;
   --primary-text: #ffffff;
-  --danger: #000000;
-  --danger-dark: #333333;
+  --danger: #b42318;
+  --danger-dark: #8f1d14;
   --radius: 12px;
 }
-/* Black & white — light (default): white background, black text. */
+/* WHITE clean professional theme (default): white background, dark
+   text, one restrained gold-brown accent. */
 body[data-theme="light"] {
-  --bg: #ffffff; --panel: #ffffff; --panel2: #f5f5f5; --panel3: #eeeeee;
-  --text: #000000; --muted: #555555; --border: #cccccc; --input-bg: #ffffff;
-  --header-bg: #ffffff; --sidebar-bg: #f5f5f5; --hover: #eeeeee; --shadow: rgba(0,0,0,.12);
-  --primary: #000000; --primary-text: #ffffff;
+  --bg: #ffffff; --panel: #ffffff; --panel2: #faf8f2; --panel3: #f1ede2;
+  --text: #1c1a16; --muted: #6f6a5e; --border: #ddd6c4; --input-bg: #ffffff;
+  --header-bg: #ffffff; --sidebar-bg: #faf8f2; --hover: #f1ede2; --shadow: rgba(60,45,10,.10);
+  --primary: #8a6d1f; --primary-text: #ffffff;
 }
-/* Dark mode = inverted: black background, white text. */
+/* Dark mode: dark slate with the same gold accent. */
 body[data-theme="dark"] {
-  --bg: #000000; --panel: #111111; --panel2: #1c1c1c; --panel3: #262626;
-  --text: #ffffff; --muted: #bbbbbb; --border: #444444; --input-bg: #1c1c1c;
-  --header-bg: #111111; --sidebar-bg: #111111; --hover: #262626; --shadow: rgba(0,0,0,.5);
-  --primary: #ffffff; --primary-text: #000000;
+  --bg: #1c1a16; --panel: #26221a; --panel2: #2e2a20; --panel3: #3a342a;
+  --text: #f5f1e6; --muted: #b8b0a0; --border: #4a4436; --input-bg: #2e2a20;
+  --header-bg: #26221a; --sidebar-bg: #26221a; --hover: #3a342a; --shadow: rgba(0,0,0,.5);
+  --primary: #d9b45b; --primary-text: #1c1a16;
 }
 html, body { margin: 0; padding: 0; }
 body {
@@ -45,7 +47,7 @@ small, .muted { color: var(--muted); }
 .app-shell { height: 100vh; display: flex; flex-direction: column; position: relative; z-index: 2; }
 .app-header {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  background: var(--header-bg); border-bottom: 2px solid var(--text);
+  background: var(--header-bg); border-bottom: 1px solid var(--border); box-shadow: 0 1px 6px var(--shadow);
   padding: 10px 16px; position: sticky; top: 0; z-index: 40; flex-wrap: wrap;
 }
 .header-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
@@ -79,7 +81,7 @@ small, .muted { color: var(--muted); }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
-.stat { background: var(--panel); border: 2px solid var(--text); border-radius: var(--radius); padding: 16px; }
+.stat { background: var(--panel); border: 1px solid var(--border); border-left: 5px solid var(--primary); border-radius: var(--radius); padding: 16px; }
 .stat .stat-label { color: var(--muted); font-size: 15px; font-weight: 600; }
 .stat .stat-value { font-size: 28px; font-weight: 800; margin-top: 4px; }
 table { width: 100%; border-collapse: collapse; font-size: 16px; }
@@ -106,8 +108,7 @@ input[type="number"].input { text-align: right; }
 .btn:hover { filter: brightness(1.08); }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 .btn-primary { background: var(--primary); border-color: var(--primary); color: var(--primary-text); }
-.btn-danger { background: #000; border-color: #000; color: #fff; }
-body[data-theme="dark"] .btn-danger { background: #fff; border-color: #fff; color: #000; }
+.btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; }
 .btn-ghost { background: transparent; }
 .btn-sm { padding: 7px 12px; font-size: 15px; }
 .btn-block { width: 100%; text-align: center; }
@@ -115,24 +116,23 @@ body[data-theme="dark"] .btn-danger { background: #fff; border-color: #fff; colo
 
 /* ---------- Badges ---------- */
 .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 14px; font-weight: 700; white-space: nowrap; border: 1px solid var(--text); }
-.badge-online { background: #000; color: #fff; }
-body[data-theme="dark"] .badge-online { background: #fff; color: #000; }
+.badge-online { background: var(--primary); color: var(--primary-text); }
 .badge-offline { background: transparent; color: var(--text); }
 .warning-banner {
-  background: var(--panel); color: var(--text); border: 3px solid var(--text);
+  background: var(--panel); color: var(--text); border: 3px solid var(--danger);
   border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px; font-weight: 600;
 }
-.low-tag { font-weight: 800; border: 2px solid var(--text); border-radius: 6px; padding: 1px 7px; font-size: 14px; white-space: nowrap; }
-tr.low-row td { border-top: 3px solid var(--text); border-bottom: 3px solid var(--text); font-weight: 700; }
-tr.low-row td:first-child { border-left: 3px solid var(--text); }
-tr.low-row td:last-child { border-right: 3px solid var(--text); }
-tr.low-note-row td { font-weight: 700; border-bottom: 3px solid var(--text); }
-.product-card.low-stock { border: 3px solid var(--text); }
+.low-tag { font-weight: 800; border: 2px solid var(--danger); color: var(--danger); border-radius: 6px; padding: 1px 7px; font-size: 14px; white-space: nowrap; }
+tr.low-row td { border-top: 3px solid var(--danger); border-bottom: 3px solid var(--danger); font-weight: 700; }
+tr.low-row td:first-child { border-left: 3px solid var(--danger); }
+tr.low-row td:last-child { border-right: 3px solid var(--danger); }
+tr.low-note-row td { font-weight: 700; border-bottom: 3px solid var(--danger); }
+.product-card.low-stock { border: 3px solid var(--danger); }
 .confirm-box-inline { background: var(--panel2); border: 2px solid var(--text); border-radius: 8px; padding: 12px; margin-top: 12px; }
 
 /* ---------- Notices (5s auto-dismiss with countdown line) ---------- */
-/* Success = black notice ("Ho Gaya ✓"); issue = white notice with a
-   thick black border ("Issue — …"). Every notice has a 5-second
+/* Success = accent notice ("Ho Gaya ✓"); issue = white notice with a
+   thick red border ("Issue — …"). Every notice has a 5-second
    countdown line at its bottom that drains over 5s, then the notice
    auto-dismisses; × closes it early. */
 #notice-stack {
@@ -147,10 +147,9 @@ tr.low-note-row td { font-weight: 700; border-bottom: 3px solid var(--text); }
   box-shadow: 0 4px 16px var(--shadow); overflow: hidden; font-weight: 700;
   font-size: 17.5px;
 }
-.notice-success { background: #000; color: #fff; border: 1px solid #000; }
-body[data-theme="dark"] .notice-success { background: #fff; color: #000; border: 1px solid #fff; }
-.notice-error { background: #fff; color: #000; border: 3px solid #000; }
-body[data-theme="dark"] .notice-error { background: #000; color: #fff; border: 3px solid #fff; }
+.notice-success { background: var(--primary); color: var(--primary-text); border: 1px solid var(--primary); }
+.notice-error { background: #fff; color: #000; border: 3px solid var(--danger); }
+body[data-theme="dark"] .notice-error { background: #26221a; color: #fff; border: 3px solid #e57373; }
 .notice-warning { border: 3px solid var(--text); }
 .notice-info { border-left: 5px solid var(--text); }
 .notice .notice-x {
@@ -161,10 +160,8 @@ body[data-theme="dark"] .notice-error { background: #000; color: #fff; border: 3
   position: absolute; left: 0; bottom: 0; height: 4px; background: var(--text);
   animation: notice-countdown 5s linear forwards;
 }
-.notice-success .notice-bar { background: #fff; }
-body[data-theme="dark"] .notice-success .notice-bar { background: #000; }
-.notice-error .notice-bar { background: #000; }
-body[data-theme="dark"] .notice-error .notice-bar { background: #fff; }
+.notice-success .notice-bar { background: var(--primary-text); }
+.notice-error .notice-bar { background: var(--danger); }
 @keyframes notice-countdown { from { width: 100%; } to { width: 0%; } }
 
 /* ---------- Login ---------- */
@@ -300,4 +297,183 @@ body[data-theme="dark"] .notice-error .notice-bar { background: #fff; }
   .header-brand img { height: 40px; width: 40px; }
   .product-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
   .product-card img { height: 100px; }
+}
+
+/* ---------- Splash (v2.0.0) ---------- */
+.splash-screen {
+  position: fixed; inset: 0; z-index: 110; display: flex; align-items: center; justify-content: center;
+  background: #ffffff; padding: 16px;
+}
+body[data-theme="dark"] .splash-screen { background: #1c1a16; }
+.splash-inner { text-align: center; animation: splash-in 1s ease-out; }
+.splash-inner img { height: 150px; width: 150px; object-fit: contain; border-radius: 50%; animation: splash-logo 1.1s ease-out; }
+.splash-brand { font-size: 34px; font-weight: 800; letter-spacing: 4px; margin-top: 12px; }
+.splash-sub { color: var(--muted); letter-spacing: 2px; font-size: 16px; }
+@keyframes splash-logo { from { opacity: 0; transform: scale(.6); } 60% { opacity: 1; transform: scale(1.06); } to { opacity: 1; transform: scale(1); } }
+@keyframes splash-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---------- Login-selection cards (v2.0.0) ---------- */
+.login-cards { display: flex; flex-direction: column; gap: 12px; margin: 14px 0; }
+.login-role-card {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+  width: 100%; text-align: left; padding: 16px 18px; border-radius: 12px;
+  border: 2px solid var(--border); background: var(--panel2); cursor: pointer;
+}
+.login-role-card:hover { border-color: var(--primary); }
+.login-role-name { font-size: 20px; font-weight: 800; }
+.login-role-sub { font-size: 15px; color: var(--muted); font-weight: 600; }
+
+/* ---------- Production layout: cart beside Raw Material (v2.0.0) ---------- */
+.prod-layout { display: grid; grid-template-columns: 1.25fr .9fr; gap: 16px; align-items: start; }
+.prod-cart { position: sticky; top: 0; }
+@media (max-width: 900px) { .prod-layout { grid-template-columns: 1fr; } .prod-cart { position: static; } }
+
+/* ---------- SmartPOS theme pass (v2.0.0) ---------- */
+/* Follows the user's SmartPOS reference exactly: off-white page, a
+   big red curved shape behind a white rounded app card, left sidebar
+   with a yellow active pill, breadcrumb + pill search, big bold
+   headings, product cards (photo, bold name, gray line, price in bold
+   yellow). White, clean, professional. Fully offline: system fonts
+   only — the elegant display face is Georgia/Times (serif) for the
+   two login buttons and the brand wordmark. */
+:root {
+  --yellow: #ffc107;
+  --yellow-deep: #e6a800;
+  --yellow-text: #b8860b;
+  --smart-red: #d92626;
+  --font-display: Georgia, "Times New Roman", "Nimbus Roman", serif;
+}
+body[data-theme="light"] {
+  --bg: #f4f2ee; --panel: #ffffff; --panel2: #ffffff; --panel3: #f6f4ef;
+  --text: #1c1a16; --muted: #6f6a5e; --border: #e4e0d6; --input-bg: #ffffff;
+  --header-bg: #ffffff; --sidebar-bg: #ffffff; --hover: #fdf6d8; --shadow: rgba(60,45,10,.12);
+  --primary: #ffc107; --primary-text: #1c1a16;
+}
+body[data-theme="dark"] {
+  --primary: #ffc107; --primary-text: #1c1a16;
+  --sidebar-bg: #26221a; --hover: #3a342a;
+}
+/* Red decorative shape behind the app card (SmartPOS reference). */
+.page-decor {
+  position: fixed; top: -360px; right: -300px; width: 920px; height: 920px;
+  background: var(--smart-red); border-radius: 50%; z-index: 0; pointer-events: none;
+}
+body[data-theme="dark"] .page-decor { opacity: .45; }
+/* The app is a white rounded card floating on the off-white page. */
+.app-shell {
+  margin: 14px; height: calc(100vh - 28px);
+  background: var(--panel); border-radius: 24px;
+  box-shadow: 0 14px 44px var(--shadow); overflow: hidden;
+}
+.app-header { box-shadow: none; border-bottom: 1px solid var(--border); }
+.header-brand { display: none; }
+.user-chip { display: none; }
+/* Sidebar: brand at top, yellow pill active item, sections, user at bottom. */
+.sidebar { width: 240px; flex-basis: 240px; padding: 16px 12px; gap: 2px; }
+.sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 2px 10px 14px; border-bottom: 1px solid var(--border); margin-bottom: 10px; }
+.sidebar-brand img { height: 46px; width: 46px; object-fit: contain; border-radius: 50%; }
+.sidebar-brand-name { font-size: 19px; font-weight: 800; letter-spacing: 1px; line-height: 1.1; }
+.sidebar-brand-sub { font-size: 13px; color: var(--muted); letter-spacing: 1px; }
+.sidebar-section-label { font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); padding: 12px 16px 4px; }
+.sidebar button.nav-item { border-radius: 999px; padding: 11px 16px; }
+.sidebar button.nav-item.active { background: var(--yellow); color: #1c1a16; font-weight: 800; }
+.sidebar-user { margin-top: auto; border-top: 1px solid var(--border); padding: 12px 10px 2px; display: flex; align-items: center; gap: 10px; }
+.sidebar-user-avatar { height: 42px; width: 42px; border-radius: 50%; background: var(--yellow); color: #1c1a16; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 17px; flex: none; }
+.sidebar-user-name { font-weight: 800; font-size: 16px; line-height: 1.2; }
+.sidebar-user-role { font-size: 13px; color: var(--muted); }
+/* Breadcrumb above every screen. */
+.crumb { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-weight: 600; color: var(--muted); }
+.crumb-home { background: none; border: none; cursor: pointer; font: inherit; font-weight: 700; color: var(--text); padding: 4px 6px; border-radius: 999px; }
+.crumb-home:hover { background: var(--hover); }
+.crumb-sep { color: var(--muted); }
+.crumb-here { color: var(--text); font-weight: 800; }
+/* Screen + big bold headings. */
+.screen { padding: 22px 26px; }
+h1 { font-size: 30px; font-weight: 800; letter-spacing: -.5px; }
+/* Pill search inputs. */
+.pos-search-row .input { border-radius: 999px; padding-left: 18px; }
+/* Buttons: soft pill shape; primary is yellow with dark text. */
+.btn { border-radius: 999px; }
+.btn-primary { background: var(--yellow); border-color: var(--yellow); color: #1c1a16; }
+/* Stat cards: yellow left edge. */
+.stat { border-left-color: var(--yellow); }
+/* Daily jobs: three big buttons on the Dashboard. */
+.daily-jobs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 16px; }
+.daily-job { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 20px 22px; border-radius: 16px; font-size: 20px; font-weight: 800; text-align: left; white-space: normal; }
+.daily-job small { font-size: 14px; font-weight: 600; color: inherit; opacity: .75; }
+@media (max-width: 760px) { .daily-jobs { grid-template-columns: 1fr; } }
+/* Product cards — SmartPOS look: white card, photo, bold name, gray
+   line, price in bold yellow; no price -> stock is the value line. */
+.product-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+.product-card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+  padding: 18px 14px 16px; box-shadow: 0 2px 10px var(--shadow);
+}
+.product-card:hover { border: 2px solid var(--yellow); }
+.product-card img { height: 150px; }
+.product-card .p-name { font-size: 19px; font-weight: 800; }
+.product-card .p-meta { font-size: 14px; color: var(--muted); margin-top: 2px; }
+.product-card .p-price { font-size: 22px; font-weight: 800; color: var(--yellow-text); margin-top: 6px; }
+.product-card .p-stock { font-size: 15px; color: var(--muted); margin-top: 2px; }
+.product-card .p-stock-strong { font-size: 17px; font-weight: 800; color: var(--text); margin-top: 6px; }
+.product-card .p-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; justify-content: center; }
+.product-ph { height: 150px; }
+/* Splash shows the off-white page + red shape behind the logo. */
+.splash-screen { background: transparent; }
+/* Login-selection screen: ONLY two buttons, in elegant serif. The
+   logo + ⋮ menu stay in the DOM (PIN page / setup need them) but are
+   hidden while the selection is shown. */
+.login-screen { background: transparent; }
+.login-card.select-mode { background: transparent; border: none; box-shadow: none; width: min(560px, 100%); padding: 0; }
+.login-card.select-mode .login-logo, .login-card.select-mode .login-menu { display: none; }
+.login-cards { gap: 18px; }
+.login-role-card {
+  background: var(--panel); border: 2px solid transparent; border-radius: 20px;
+  padding: 30px 28px; box-shadow: 0 12px 34px var(--shadow); text-align: center;
+  display: block; width: 100%;
+}
+.login-role-card:hover { border-color: var(--yellow); transform: translateY(-2px); }
+.login-role-card:active { transform: translateY(0); }
+.login-role-name { font-family: var(--font-display); font-size: 42px; font-weight: 700; letter-spacing: 3px; }
+.splash-brand, .login-brand { font-family: var(--font-display); }
+/* Responsive: keep the earlier breakpoints working (these come after
+   them in the file, so they win inside their media conditions). */
+@media (max-width: 1180px) {
+  .sidebar { width: 190px; flex-basis: 190px; }
+}
+@media (max-width: 1024px) {
+  .sidebar { width: 170px; flex-basis: 170px; }
+  .sidebar button.nav-item { font-size: 16px; padding: 10px 12px; }
+  h1 { font-size: 24px; }
+}
+@media (max-width: 900px) {
+  .sidebar-brand, .sidebar-user, .sidebar-section-label { display: none; }
+  .sidebar { padding: 8px; }
+}
+@media (max-width: 760px) {
+  .screen { padding: 12px; }
+  .app-shell { margin: 8px; height: calc(100vh - 16px); border-radius: 16px; }
+  .page-decor { width: 600px; height: 600px; top: -260px; right: -220px; }
+  h1 { font-size: 22px; }
+  .login-role-name { font-size: 32px; }
+}
+
+/* ---- Bilingual pass + product detail screen (user brief 2026-11-19) ---- */
+/* Sidebar nav: English label + small Roman Urdu sub-line. */
+.sidebar button.nav-item { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; line-height: 1.3; }
+.sidebar button.nav-item .nav-label { font-weight: 700; font-size: 17px; }
+.sidebar button.nav-item .nav-sub { font-size: 13px; font-weight: 600; color: var(--muted); }
+.sidebar button.nav-item.active .nav-sub { color: rgba(28, 26, 22, .68); }
+/* Roman Urdu supporting line under the breadcrumb on every screen. */
+.screen-sub { color: var(--muted); margin: -8px 0 16px; font-size: 15px; font-weight: 600; }
+/* Bilingual buttons: English main label + Roman Urdu sub-line. */
+.btn-bilingual { display: inline-flex; flex-direction: column; align-items: flex-start; line-height: 1.3; }
+.btn-bilingual .btn-sub { font-size: 13px; font-weight: 600; opacity: .75; }
+/* Product detail / manage screen photo. */
+.detail-photo { width: 100%; max-height: 220px; object-fit: contain; background: #fff; border: 1px solid var(--border); border-radius: 12px; }
+.detail-photo-ph { display: flex; align-items: center; justify-content: center; height: 120px; font-size: 26px; font-weight: 800; color: var(--muted); }
+@media (max-width: 900px) {
+  /* Two-line nav items do not fit the horizontal phone bar — subs hide. */
+  .sidebar button.nav-item { flex-direction: row; align-items: center; }
+  .sidebar button.nav-item .nav-sub { display: none; }
 }

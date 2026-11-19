@@ -62,10 +62,22 @@ No GitHub push, no tag/release, no change to the web artifact or to
   their tables are not in v1.0.0 scope). Suppliers exist only as a minimal
   table backing the Purchases supplier name (auto-created on purchase save);
   there is no Suppliers screen.
-- **Branch model:** branch 1 ("sahara backers railway road") is the central
-  godown/Warehouse. Transfers default From = branch 1, To = branch 2 or 3
-  (any branch except From is selectable). Stock is per-branch
-  (`branchStocks`); warehouse stock is branch 1's stock.
+- **Branch model (v2.0.0 — changed 2026-11-19, was v1.0.0 "branch 1 is the
+  godown"):** the Warehouse/Godown is a REAL separate location
+  (`DB.WAREHOUSE_ID = 'warehouse'`, `DB.WAREHOUSE_NAME = 'Warehouse'`),
+  NOT a branch. The 3 branches are Branch 1, Branch 2, Branch 3, each a
+  real branch. Stock is per-location (`branchStocks`, with a `warehouse`
+  row per product). Transfers are ALWAYS Warehouse → branch: the form's
+  From is a fixed "Warehouse (Godown)" line (no select, no branch-to-branch
+  transfer possible) and To lists all 3 branches. The SB transfer bill's
+  From line reads "Warehouse", never "Branch 1". **v1.0.0 migration**
+  (`settings.v201WarehouseMigrated`, one-time, flag-guarded): on first load
+  of a v1.0.0 data file, each product's branch-1 stock moves into the
+  warehouse row (added to any existing warehouse qty, never duplicated),
+  the branch-1 row is removed, and stock movements / transfers / purchases
+  with branchId 1 are re-pointed to `'warehouse'`; totals never change.
+  Fresh seed (`src/seed.json`) gives every product a `{branchId:
+  'warehouse', qty: 0}` row and sets the flag true.
 - **Transfer bill prices:** the item's CURRENT price. All 44 prices are
   null, so a line shows quantity + "price blank" and no invented amount;
   TOTAL VALUE carries a `*` + plain note when any line price is missing
@@ -173,3 +185,97 @@ show. Re-run the JPEG-decode check after delivery.
    created — deliberately out of scope for this task.
 4. `Export Data JSON` writes to the user's Desktop via `fs` in the
    renderer; falls back to a blob download if that fails.
+
+## v2.0.0 changes (2026-11-19) — Warehouse as a real location
+
+Fixes the v2.0.0 verification blocker (item 7): the Warehouse/Godown is
+now a real location separate from the 3 branches — see the updated
+"Branch model" bullet above. What changed, file by file:
+
+- `src/db.js` — `DB.WAREHOUSE_ID = 'warehouse'`; `completeProduction()`
+  defaults to the Warehouse; one-time `v201WarehouseMigrated` migration
+  (branch-1 stock → warehouse stock, no loss, no duplication).
+- `src/ui.js` — `warehouseBranchId()` returns the warehouse id;
+  `branchName('warehouse')` = `'Warehouse'`.
+- `src/transfer.js` — source LOCKED to Warehouse (fixed static line, no
+  From select); To lists all 3 branches.
+- `src/transfer-bill.js` — SB bill From line reads "Warehouse".
+- `src/warehouse.js`, `src/dashboard.js`, `src/branches.js`, `src/stock.js`,
+  `src/purchases.js`, `src/raw.js` — Warehouse shown as its own location
+  (Stock page renders a Warehouse card first; Stock In/Out and Purchases
+  default to Warehouse); all "Branch 1 = godown" wording removed.
+- `src/seed.json` — all 44 products have a warehouse stock row (qty 0,
+  matching the live backup, which held no stock); no branch-1 rows;
+  `settings.v201WarehouseMigrated: true`.
+
+Logins (Owner Rahmanullah PIN 1234, Manager PIN 123), white theme,
+splash/login flow and all other verified behaviour unchanged. Version
+stays 2.0.0 (unreleased). Re-verified 2026-11-19: Node DB 45/45 (incl. new
+W1–W6 warehouse cases), recovery-fix 8/8, headless Electron 29/29 (incl.
+new E11a form-lock + E11b transfer-to-Branch-1), fix-recovery 6/6 — zero
+console errors. Evidence:
+`~/workspace/sahara-bakers-desktop-test-evidence/` (`db-test.log`,
+`electron-final-run.log`, `11-transfer-to-branch1.png`).
+
+## SmartPOS theme + Professional & Bilingual (2026-11-19, v2.0.0 unreleased)
+
+SmartPOS look (user-supplied screenshot): off-white page + big red curved
+shape behind the white rounded app card; left sidebar with the Sahara logo
+and "SAHARA BAKERS"; active nav item = yellow pill (#ffc107); breadcrumb +
+pill search top-right; big bold headings; product cards in a grid (photo,
+bold name, gray unit line, price in bold yellow; no price -> stock shown,
+never invented). Login-selection screen: ONLY two buttons — Owner and
+Manager — in elegant Georgia serif, nothing else on the screen (logo, menu
+and all other text hidden in select-mode; they return on the PIN page).
+
+Professional & bilingual (user brief, same day):
+- Main screens no longer show "Edit Item" / stock correction: the Products
+  cards have NO Edit/Delete buttons and the Raw/Finish rows have NO Edit
+  button. Clicking a card/row opens the product's OWN detail/manage screen
+  (`App.showProductDetail` in `src/ui.js`): photo, prices, details, stock
+  per location (Warehouse + Branch 1/2/3 + Total), production history
+  (finish items), stock history, and — editors only — Edit, Delete and
+  Close. Stock correction stays inside the Edit form (the manage screen),
+  never on a listing. The dead `src/items.js` screen is untouched.
+- "+ New Product" button (was "+ Product Add Karein"); "+ New Raw Item",
+  "+ New Finish Item" likewise.
+- Bilingual everywhere on the main surface: main headings/buttons in
+  English, Roman Urdu supporting/sub-text alongside — nav items carry a
+  small Roman Urdu sub-label (Dashboard "Aaj ka hisaab", Products "Sab
+  items", Raw Material "Kacha maal", Production "Tayyar karna", Finish
+  Goods "Tayyar cheezein", Warehouse "Godown", Stock Transfer "Branch ko
+  bhejo", Branches "Teeno branches", Billing "Bill aur invoices", Stock
+  In/Out "Maal aaya / gaya", Stock "Stock dekho", Reports "Hisaab report",
+  Purchases "Kharidari", Logins "Login details", Settings "Settings");
+  every screen shows a Roman Urdu line under the breadcrumb; Dashboard
+  stat labels are English ("Total Items", "Received Today", "Sent Today",
+  "Low Stock") with Roman Urdu subs; Dashboard shows 3 big daily-jobs
+  buttons — Stock In / Maal godown mein aaya, Transfer to Branch / Maal
+  branch ko bhejo, View Stock / Godown aur branch stock dekho — and
+  bilingual quick-action buttons; main action buttons are English
+  (Save, Close, Login, Transfer & View Bill, Complete Production & View
+  Bill, Print Bill, Save PDF, Restore from Backup, Logout, Change PIN).
+- No feature or data deleted: 44 items, Branch 1/2/3, Manager PIN 123 /
+  Owner PIN 1234, production cart + PB bills, transfers + SB bills,
+  history, search/filter, backup all unchanged. Separate-warehouse model
+  (`DB.WAREHOUSE_ID = 'warehouse'`, transfers locked to Warehouse, bill
+  From = "Warehouse") and all data-loss hardening untouched.
+
+Changed files (16): `index.html`, `styles.css`, `src/ui.js`,
+`src/dashboard.js`, `src/products.js`, `src/raw.js`, `src/finished.js`,
+`src/stock.js`, `src/transfer.js`, `src/production.js`, `src/warehouse.js`,
+`src/branches.js`, `src/settings.js`, `src/purchases.js`, `src/logins.js`,
+`src/transfer-bill.js`. Binaries unchanged (44 photos, logo, icons).
+
+Re-verified 2026-11-19 from scratch: Node DB 45/45, recovery-fix 8/8,
+fix-recovery 6/6 (one stale label assert updated: "Kul Items" ->
+"Total Items"), headless Electron 33/33 REAL clicks — zero console
+errors. New checks: E1 (only two login buttons, Georgia serif, no
+logo/menu), E6 (44 cards, "+ New Product", 0 Edit/Delete on the
+listing), E7b1 (detail screen opens on card click, Edit + Delete
+inside), E8b1 (Raw rows: 0 Edit, 28 Details), E16/E16b (yellow active
+pill rgb(255,193,7), nav sub-labels, breadcrumb sub-lines, 3 daily
+jobs, bilingual quick actions, yellow price rgb(184,134,11), pill
+search 999px). Fresh screenshots: `01-login-cards.png`,
+`03-dashboard-owner.png`, `04-products.png`, `12-product-detail.png`.
+Evidence: `~/workspace/sahara-bakers-desktop-test-evidence/`.

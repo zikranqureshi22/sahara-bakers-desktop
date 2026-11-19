@@ -7,10 +7,22 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body data-theme="light">
+<!-- Red decorative shape behind the white app card (SmartPOS theme). -->
+<div class="page-decor" aria-hidden="true"></div>
 <div id="notice-stack" aria-live="polite"></div>
 
+<!-- Splash: Sahara logo animation, then the login-selection screen. -->
+<div id="splash-screen" class="splash-screen" hidden>
+  <div class="splash-inner">
+    <img id="splash-logo-img" src="assets/sahara-logo.png" alt="Sahara Bakers" onerror="this.style.display='none'">
+    <div class="splash-brand">SAHARA BAKERS</div>
+    <div class="splash-sub">Godown Stock</div>
+  </div>
+</div>
+
 <!-- Login overlay: shown when no user is logged in.
-     PIN login (Owner Rahmanullah, PIN 3333). -->
+     v2.0.0: splash, then login-selection cards — Owner (Rahmanullah,
+     PIN 1234) and Manager (PIN 123). Each card opens its own PIN page. -->
 <div id="login-screen" class="login-screen">
   <div class="login-card">
     <!-- Login-screen ⋮ menu: theme toggle + one-click restore from
@@ -20,7 +32,7 @@
       <button id="login-menu-btn" class="btn btn-ghost login-menu-btn" type="button" aria-label="Menu" title="Menu">⋮</button>
       <div id="login-menu" class="login-menu-list" hidden>
         <button id="login-theme-toggle" class="btn btn-ghost login-menu-item" type="button">Dark Theme</button>
-        <button id="login-restore-btn" class="btn btn-ghost login-menu-item" type="button">Backup se Data Wapas Layein</button>
+        <button id="login-restore-btn" class="btn btn-ghost login-menu-item" type="button">Restore from Backup</button>
       </div>
     </div>
     <div class="login-logo">
@@ -39,7 +51,7 @@
     <p id="confirm-text"></p>
     <div class="confirm-actions">
       <button id="confirm-no" class="btn btn-ghost">Cancel</button>
-      <button id="confirm-yes" class="btn btn-danger">Confirm Karein</button>
+      <button id="confirm-yes" class="btn btn-danger">Confirm</button>
     </div>
   </div>
 </div>
@@ -49,7 +61,7 @@
   <div class="item-form-card">
     <div class="bill-preview-head">
       <h3 id="item-form-title">Item</h3>
-      <button id="item-form-x" class="btn btn-ghost" type="button" aria-label="Band Karein">×</button>
+      <button id="item-form-x" class="btn btn-ghost" type="button" aria-label="Close">×</button>
     </div>
     <div id="item-form-body"></div>
   </div>
@@ -62,12 +74,13 @@
   <div class="bill-preview-card">
     <div class="bill-preview-head">
       <h3>Bill Preview</h3>
-      <button id="bill-preview-x" class="btn btn-ghost" type="button" aria-label="Band Karein">×</button>
+      <button id="bill-preview-x" class="btn btn-ghost" type="button" aria-label="Close">×</button>
     </div>
     <div id="bill-preview-body" class="bill-preview-body"></div>
     <div class="bill-preview-actions">
-      <button id="bill-preview-print" class="btn btn-primary" type="button">Bill Print Karein (80mm Thermal)</button>
-      <button id="bill-preview-close" class="btn" type="button">Band Karein</button>
+      <button id="bill-preview-print" class="btn btn-primary" type="button">Print Bill (80mm Thermal)</button>
+      <button id="bill-preview-pdf" class="btn" type="button">Save PDF</button>
+      <button id="bill-preview-close" class="btn" type="button">Close</button>
     </div>
   </div>
 </div>
@@ -87,7 +100,7 @@
       <span id="net-badge" class="badge badge-offline">Offline — Local</span>
       <button id="theme-toggle" class="btn btn-ghost" type="button" title="Dark / Light theme">Dark Theme</button>
       <span id="user-chip" class="user-chip"></span>
-      <button id="logout-btn" class="btn btn-ghost" type="button">Lock / Logout</button>
+      <button id="logout-btn" class="btn btn-ghost" type="button">Logout</button>
     </div>
   </header>
 
@@ -102,10 +115,18 @@
 
 <script src="src/ui.js"></script>
 <script src="src/dashboard.js"></script>
+<script src="src/products.js"></script>
+<script src="src/raw.js"></script>
+<script src="src/production.js"></script>
+<script src="src/finished.js"></script>
+<script src="src/warehouse.js"></script>
+<script src="src/transfer.js"></script>
 <script src="src/items.js"></script>
 <script src="src/stock.js"></script>
 <script src="src/branches.js"></script>
 <script src="src/transfer-bill.js"></script>
+<script src="src/billing.js"></script>
+<script src="src/reports.js"></script>
 <script src="src/purchases.js"></script>
 <script src="src/logins.js"></script>
 <script src="src/settings.js"></script>
