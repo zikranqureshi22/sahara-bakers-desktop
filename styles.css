@@ -477,3 +477,157 @@ h1 { font-size: 30px; font-weight: 800; letter-spacing: -.5px; }
   .sidebar button.nav-item { flex-direction: row; align-items: center; }
   .sidebar button.nav-item .nav-sub { display: none; }
 }
+
+/* v2.1.0 — Khata / KOT / Settings Hub (Worker D) */
+/* Khata ledger: prominent running-balance box (no cost/profit here). */
+.khata-balance-box { background: var(--panel2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin: 12px 0; }
+.khata-balance-big { font-size: 30px; font-weight: 800; line-height: 1.2; }
+
+/* v2.1.0 — Staff / Recipes (Worker F; append-only, existing rules untouched) */
+.att-badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; }
+.att-present { background: #111; color: #fff; }
+.att-absent { background: #fff; color: #111; border: 1px solid #111; }
+.recipe-card { margin-bottom: 16px; }
+.recipe-card .screen-head { margin-bottom: 4px; }
+@media (max-width: 900px) {
+  .att-badge { font-size: 12px; }
+}
+/* Receipt-style right-aligned cells also in normal tables (Khata list/ledger). */
+.table-wrap td.r-right, .table-wrap th.r-right { text-align: right; }
+
+/* v2.1.0 — Expiry/Suppliers/Expenses/Reports (Worker H) — append-only, existing rules untouched. */
+/* Expiry batch rows: expired batches highlighted, dispatch blocked. */
+.batch-row { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.batch-row:last-child { border-bottom: none; }
+.batch-expired { background: rgba(180, 30, 30, .08); border-left: 4px solid #b41e1e; padding-left: 8px; border-radius: 4px; }
+.badge-expired { font-weight: 800; font-size: 13px; color: #b41e1e; text-transform: uppercase; letter-spacing: .02em; }
+/* Reports print: only the report area prints, sidebar/header hidden. */
+@media print {
+  .sidebar, .app-header, .crumb { display: none !important; }
+  .app-shell { height: auto; }
+  .screen { padding: 0; }
+  .card { break-inside: avoid; }
+}
+
+/* v2.1.0 — Shifts / Sales Summary / POS Dashboard (Worker C) */
+/* Dark POS card for the Shifts screen: matches the Sale screen
+ * (#171310 background, #f97316 orange accent). Scoped to .shift-pos
+ * so the light/dark SmartPOS theme is untouched. */
+.shift-pos { background: #171310; color: #f5f0ea; border-color: #171310; }
+.shift-pos h2 { color: #fff; }
+.shift-pos .muted { color: #c9bdb2; }
+.shift-pos .input { background: #241d18; color: #f5f0ea; border-color: #4a3f36; }
+.shift-pos .input::placeholder { color: #9a8d80; }
+.shift-pos .btn-primary { background: #f97316; border-color: #f97316; color: #171310; }
+.shift-pos-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 12px 0; }
+.shift-pos-label { font-size: 13px; font-weight: 700; color: #c9bdb2; text-transform: uppercase; letter-spacing: .04em; }
+.shift-pos-value { font-size: 20px; font-weight: 800; color: #fff; margin-top: 2px; }
+/* Sales Summary tabs + void rows. */
+.sum-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.void-row { opacity: .65; }
+.void-row td { text-decoration: line-through; }
+.void-row td:first-child { text-decoration: none; }
+/* POS Dashboard bill rows are clickable. */
+.pd-bill-row:hover { background: var(--panel2); }
+
+/* v2.1.0 — POS Sale (Worker B) — dark Counter POS theme (#171310 bg,
+ * #f97316 orange accents, web AsanBilling dark theme jaisa). Sab
+ * selectors .pos-* / .void-stamp / .r-void scoped hain — existing
+ * rules ko chheda nahi gaya. */
+.pos-wrap { background: #171310; color: #f5f0eb; border-radius: 16px; padding: 16px; }
+.pos-wrap h1, .pos-wrap h2, .pos-wrap h3 { color: #fff; }
+.pos-wrap .muted { color: #b8a99c; }
+.pos-sub { color: #d6c9bd; margin: -6px 0 14px; font-size: 15px; }
+.pos-banner { border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; font-size: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pos-banner-ok { background: #1e2b1e; border: 1px solid #3f6b3a; color: #d9f0d4; }
+.pos-banner-warn { background: #3a2503; border: 1px solid #f97316; color: #ffe1c2; }
+.pos-type-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.pos-type-btn { background: #241d18; color: #f5f0eb; border: 1px solid #4a3d33; border-radius: 10px; padding: 10px 14px; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; line-height: 1.25; }
+.pos-type-btn span { font-size: 12px; font-weight: 600; color: #b8a99c; }
+.pos-type-btn.active { background: #f97316; border-color: #f97316; color: #171310; }
+.pos-type-btn.active span { color: #3a2503; }
+.pos-tables { margin-bottom: 12px; }
+.pos-tables h3 { margin: 0 0 8px; }
+.pos-table-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+.pos-table-btn { background: #241d18; color: #f5f0eb; border: 1px solid #4a3d33; border-radius: 10px; padding: 10px; font-size: 15px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
+.pos-table-btn span { font-size: 12px; font-weight: 600; color: #b8a99c; }
+.pos-table-btn.active { background: #f97316; border-color: #f97316; color: #171310; }
+.pos-table-btn.active span { color: #3a2503; }
+.pos-table-btn.busy { border-color: #dc2626; }
+.pos-table-btn.busy span { color: #fca5a5; }
+.pos-main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 14px; align-items: start; }
+@media (max-width: 900px) { .pos-main { grid-template-columns: 1fr; } }
+.pos-menu-bar { margin-bottom: 10px; }
+.pos-search { width: 100%; background: #241d18; color: #f5f0eb; border-color: #4a3d33; margin-bottom: 8px; }
+.pos-search::placeholder { color: #8d7d6f; }
+.pos-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.pos-chip { background: #241d18; color: #f5f0eb; border: 1px solid #4a3d33; border-radius: 999px; padding: 6px 12px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.pos-chip.active { background: #f97316; border-color: #f97316; color: #171310; }
+.pos-menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.pos-card { background: #241d18; border: 1px solid #3a2f27; border-radius: 12px; padding: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; text-align: left; color: #f5f0eb; }
+.pos-card:hover { border-color: #f97316; }
+.pos-card img { width: 100%; height: 110px; object-fit: cover; border-radius: 8px; background: #171310; }
+.pos-photo-ph { display: flex; align-items: center; justify-content: center; height: 110px; border-radius: 8px; background: #171310; color: #b8a99c; font-size: 15px; font-weight: 700; text-align: center; padding: 6px; }
+.pos-card-name { font-weight: 700; font-size: 15px; }
+.pos-card-unit { font-size: 12px; color: #b8a99c; }
+.pos-price { color: #fb923c; font-weight: 800; font-size: 16px; }
+.pos-noprice { color: #f87171; font-weight: 700; font-size: 14px; }
+.pos-card.unpriced { opacity: 0.65; cursor: not-allowed; }
+.pos-cart { background: #241d18; border: 1px solid #3a2f27; border-radius: 12px; padding: 14px; position: sticky; top: 0; }
+.pos-cart h2 { margin-top: 0; }
+.pos-cart label { color: #d6c9bd; font-size: 14px; font-weight: 700; }
+.pos-cart .input { background: #171310; color: #f5f0eb; border-color: #4a3d33; }
+.pos-cashier { margin-bottom: 10px; }
+.pos-order-line { color: #d6c9bd; font-size: 14px; }
+.pos-lines { margin: 10px 0; display: flex; flex-direction: column; gap: 8px; }
+.pos-line { display: flex; align-items: center; gap: 6px; background: #171310; border: 1px solid #3a2f27; border-radius: 8px; padding: 8px; }
+.pos-line-name { flex: 1; font-size: 14px; font-weight: 600; }
+.pos-line-name small { color: #b8a99c; font-weight: 400; }
+.pos-qty-btn { min-width: 30px; }
+.pos-qty { min-width: 22px; text-align: center; font-weight: 800; }
+.pos-money-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.pos-money-row label { flex: 1; }
+.pos-money-row .input { width: 130px; text-align: right; }
+.pos-totals { border-top: 1px dashed #4a3d33; margin-top: 10px; padding-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.pos-totals > div { display: flex; justify-content: space-between; font-size: 15px; }
+.pos-totals .pos-total { font-size: 19px; border-top: 1px solid #4a3d33; padding-top: 6px; margin-top: 4px; }
+.pos-totals .pos-total b { color: #fb923c; }
+.pos-pay { margin-top: 12px; }
+.pos-pay-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.pos-pay-btn { background: #171310; color: #f5f0eb; border: 1px solid #4a3d33; border-radius: 8px; padding: 8px 12px; font-size: 14px; font-weight: 700; cursor: pointer; }
+.pos-pay-btn.active { background: #f97316; border-color: #f97316; color: #171310; }
+.pos-khata { margin-top: 10px; background: #171310; border: 1px solid #4a3d33; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.pos-khata-bal { font-size: 14px; margin: 0; }
+.pos-khata-add { display: flex; gap: 6px; flex-wrap: wrap; }
+.pos-khata-add .input { flex: 1; min-width: 120px; }
+.pos-actions { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.pos-actions .btn-primary { background: #f97316; border-color: #f97316; color: #171310; font-size: 17px; padding: 12px; }
+.pos-actions .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+.pos-kot-row { display: flex; gap: 8px; }
+.pos-kot-row .btn { flex: 1; }
+.pos-held-card { margin-top: 14px; }
+/* VOID stamp — sale history, billing list aur 80mm bill par. */
+.void-stamp { color: #dc2626; border: 2px solid #dc2626; border-radius: 4px; padding: 0 6px; font-size: 13px; font-weight: 800; display: inline-block; }
+.r-void { color: #dc2626; border: 2px solid #dc2626; border-radius: 4px; padding: 2px 6px; font-weight: 800; margin: 6px auto; display: inline-block; }
+
+/* v2.1.0 — Owner Dashboard (Worker E) — append-only, existing rules untouched. */
+.od-greeting { font-size: 19px; font-weight: 700; margin: 4px 0 2px; }
+.od-chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+.od-chip.active { background: var(--primary); color: var(--primary-text); border-color: var(--primary); }
+.od-custom { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 0 0 12px; }
+.od-custom .input { max-width: 180px; }
+.od-bill-detail td { background: var(--panel2); }
+
+/* v2.1.0 — POS-only shell (Worker I) — Counter Manager login:
+ * header controls (branch selector, net badge, theme toggle)
+ * chhupa do; sirf naam + logout wali slim top bar dikhao.
+ * .user-chip SmartPOS theme mein display:none hai — POS-only
+ * mein wapas dikhao. Sidebar rehta hai lekin us mein sirf POS
+ * screens aate hain (ui.js renderSidebar + App.can() filter) —
+ * godown nav kabhi nahi banta, is liye use chhupane ki zaroorat
+ * nahi. */
+body.pos-only #branch-select,
+body.pos-only #net-badge,
+body.pos-only #theme-toggle { display: none !important; }
+body.pos-only .user-chip { display: inline-flex !important; align-items: center; font-weight: 800; font-size: 16px; }
+body.pos-only .app-header { justify-content: flex-end; }
