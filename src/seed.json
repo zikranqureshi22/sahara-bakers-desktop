@@ -1,5 +1,5 @@
 {
-  "_note": "Sahara Bakers v2.0.0 first-run seed — from live web-app backup 2026-11-19. Branches Branch 1/2/3, plus a separate Warehouse location (branchStocks branchId \"warehouse\"). Owner PIN 1234 (Rahmanullah), Manager PIN 123 (hashed, sha256 pin:sahara-bakers-salt). Prices: only Cheese Rs 8000/5000 and Bakery Cake Rs 9000/7000 (user-entered, from live backup); all other 42 items null — user enters them in-app.",
+  "_note": "Sahara Bakers v2.1.0 first-run seed — 44 base items (ids 12-55, from live web-app backup 2026-11-19) + 96 video-menu items (ids 63-158, from live backup 2026-11-23; id 96 Sahara Sp 1 Meter Pizza Rs 4000 has no photo). Branches Branch 1/2/3, plus a separate Warehouse location (branchStocks branchId \"warehouse\"). Logins: Owner Rahmanullah PIN 1234, Warehouse (username manager) PIN 123, Counter Manager (username counter, POS-only) PIN 1234 — all hashed sha256 pin:sahara-bakers-salt. Prices: Cheese Rs 8000/5000, Bakery Cake Rs 9000/7000, video items at live prices except ids 130/133/138 (null — user enters them in-app); all other items null — user enters them in-app. Transactions (sales/productions/transfers/movements) are NOT seeded — all 0.",
   "products": [
     {
       "id": 12,
@@ -1106,11 +1106,11 @@
     {
       "id": 50,
       "name": "Fancy Biscuit",
-      "price": null,
+      "price": 1200,
       "purchasePrice": null,
       "category": "Finished Bakery Products",
       "type": "finished",
-      "unit": "Pieces",
+      "unit": "Kg",
       "sku": null,
       "barcode": null,
       "lowThreshold": null,
@@ -1135,11 +1135,11 @@
     {
       "id": 51,
       "name": "Sada Biscuit",
-      "price": null,
+      "price": 1000,
       "purchasePrice": null,
       "category": "Finished Bakery Products",
       "type": "finished",
-      "unit": "Pieces",
+      "unit": "Kg",
       "sku": null,
       "barcode": null,
       "lowThreshold": null,
@@ -1164,7 +1164,7 @@
     {
       "id": 52,
       "name": "Double Roti",
-      "price": null,
+      "price": 200,
       "purchasePrice": null,
       "category": "Finished Bakery Products",
       "type": "finished",
@@ -1276,6 +1276,2982 @@
           "qty": 0
         }
       ]
+    },
+    {
+      "id": 63,
+      "name": "Fajita L",
+      "price": 1500,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/63-fajita-l.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 64,
+      "name": "Fajita S",
+      "price": 600,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/64-fajita-s.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 65,
+      "name": "Malai Boti S",
+      "price": 600,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/65-malai-boti-s.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 66,
+      "name": "Super supreme S",
+      "price": 600,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/66-super-supreme-s.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 67,
+      "name": "Super supreme xl",
+      "price": 2000,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/67-super-supreme-xl.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 68,
+      "name": "Malai Boti M",
+      "price": 1100,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/68-malai-boti-m.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 69,
+      "name": "Fajita M",
+      "price": 1100,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/69-fajita-m.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 70,
+      "name": "Super supreme L",
+      "price": 1500,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/70-super-supreme-l.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 71,
+      "name": "Super supreme M",
+      "price": 1100,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/71-super-supreme-m.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 72,
+      "name": "Fajita xl",
+      "price": 2000,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/72-fajita-xl.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 73,
+      "name": "Vegetable xl",
+      "price": 2000,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/73-vegetable-xl.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 74,
+      "name": "Malai Boti xl",
+      "price": 2000,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/74-malai-boti-xl.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 75,
+      "name": "Vegetable M",
+      "price": 1100,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/75-vegetable-m.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 76,
+      "name": "Vegetable L",
+      "price": 1500,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/76-vegetable-l.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 77,
+      "name": "Malai Boti L",
+      "price": 1500,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/77-malai-boti-l.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 78,
+      "name": "Vegetable S",
+      "price": 600,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/78-vegetable-s.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 79,
+      "name": "Achari L",
+      "price": 1500,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/79-achari-l.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 80,
+      "name": "Achari S",
+      "price": 600,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/80-achari-s.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 81,
+      "name": "Achari M",
+      "price": 1100,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/81-achari-m.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 82,
+      "name": "Achari xl",
+      "price": 2000,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/82-achari-xl.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 83,
+      "name": "Margarita L",
+      "price": 1500,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/83-margarita-l.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 84,
+      "name": "Margarita S",
+      "price": 600,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/84-margarita-s.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 85,
+      "name": "Margarita M",
+      "price": 1100,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/85-margarita-m.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 86,
+      "name": "kabab Stuff Xl",
+      "price": 2200,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "sp Pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/86-kabab-stuff-xl.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 87,
+      "name": "kabab Stuff L",
+      "price": 1800,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "sp Pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/87-kabab-stuff-l.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 88,
+      "name": "Chkn Cheese M",
+      "price": 1200,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "sp Pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/88-chkn-cheese-m.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 89,
+      "name": "kabab Stuff M",
+      "price": 1200,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "sp Pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/89-kabab-stuff-m.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 90,
+      "name": "Margarita xl",
+      "price": 2000,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/90-margarita-xl.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 91,
+      "name": "Chkn Cheese L",
+      "price": 1800,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "sp Pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/91-chkn-cheese-l.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 92,
+      "name": "Chkn Cheese xl",
+      "price": 2200,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "sp Pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/92-chkn-cheese-xl.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 93,
+      "name": "Crown Crust L",
+      "price": 1800,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "sp Pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/93-crown-crust-l.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 94,
+      "name": "Crown Crust Xl",
+      "price": 2200,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "sp Pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/94-crown-crust-xl.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 95,
+      "name": "Kababish M",
+      "price": 1200,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "sp Pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/95-kababish-m.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 96,
+      "name": "Sahara Sp 1 Meter Pizza",
+      "price": 4000,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "sp Pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": null,
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 97,
+      "name": "zinger",
+      "price": 300,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Burger",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/97-zinger.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 98,
+      "name": "Zinger Cheese",
+      "price": 350,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Burger",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/98-zinger-cheese.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 99,
+      "name": "Crown Crust M",
+      "price": 1200,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "sp Pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/99-crown-crust-m.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 100,
+      "name": "Kababish L",
+      "price": 1800,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "sp Pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/100-kababish-l.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 101,
+      "name": "patti BURGER",
+      "price": 250,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Burger",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/101-patti-burger.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 102,
+      "name": "Kababish xl",
+      "price": 2200,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "sp Pizza",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/102-kababish-xl.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 103,
+      "name": "Fries S",
+      "price": 150,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Fries",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/103-fries-s.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 104,
+      "name": "Chapli BURGER",
+      "price": 250,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Burger",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/104-chapli-burger.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 105,
+      "name": "Fish",
+      "price": 500,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Burger",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/105-fish.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 106,
+      "name": "Fries L",
+      "price": 250,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Fries",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/106-fries-l.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 107,
+      "name": "Double Decker",
+      "price": 450,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Burger",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/107-double-decker.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 108,
+      "name": "Fries M",
+      "price": 200,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Fries",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/108-fries-m.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 109,
+      "name": "Shara sp BURGER",
+      "price": 450,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Burger",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/109-shara-sp-burger.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 110,
+      "name": "Zinger Pice",
+      "price": 250,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Burger",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/110-zinger-pice.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 111,
+      "name": "Loaded Fries s",
+      "price": 400,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Loaded Fries",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/111-loaded-fries-s.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 112,
+      "name": "Loaded Fries L",
+      "price": 600,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Loaded Fries",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/112-loaded-fries-l.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 113,
+      "name": "2.25",
+      "price": 260,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Cold Drinks",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/113-225.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 114,
+      "name": "Watter B",
+      "price": 100,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Cold Drinks",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/114-watter-b.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 115,
+      "name": "coca cola 2.25",
+      "price": 260,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Cold Drinks",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/115-coca-cola-225.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 116,
+      "name": "1.25",
+      "price": 200,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Cold Drinks",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/116-125.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 117,
+      "name": "Can Tin pak",
+      "price": 120,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Cold Drinks",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/117-can-tin-pak.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 118,
+      "name": "1 Lither",
+      "price": 170,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Cold Drinks",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/118-1-lither.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 119,
+      "name": "coca cola 1.5",
+      "price": 200,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Cold Drinks",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/119-coca-cola-15.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 120,
+      "name": "Water S",
+      "price": 50,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Cold Drinks",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/120-water-s.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 121,
+      "name": "Glass",
+      "price": 5,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Cold Drinks",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/121-glass.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 122,
+      "name": "Sting",
+      "price": 130,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Cold Drinks",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/122-sting.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 123,
+      "name": "Creem roll pc",
+      "price": 100,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "BISKTS",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/123-creem-roll-pc.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 124,
+      "name": "Copra Biskit",
+      "price": 1200,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "BISKTS",
+      "type": "finished",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/124-copra-biskit.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 125,
+      "name": "coca cola 1 litter",
+      "price": 170,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Cold Drinks",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/125-coca-cola-1-litter.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 126,
+      "name": "donuts",
+      "price": 150,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "BISKTS",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/126-donuts.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 127,
+      "name": "cutt rusk paket",
+      "price": 450,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "BISKTS",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/127-cutt-rusk-paket.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 128,
+      "name": "burger rusk",
+      "price": 250,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "BISKTS",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/128-burger-rusk.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 129,
+      "name": "sprit 1.5",
+      "price": 200,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Cold Drinks",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/129-sprit-15.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 130,
+      "name": "goll rask",
+      "price": null,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "BISKTS",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/130-goll-rask.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 131,
+      "name": "sugar free doble roti",
+      "price": 180,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "BISKTS",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/131-sugar-free-doble-roti.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 132,
+      "name": "shermal pc",
+      "price": 60,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "BISKTS",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/132-shermal-pc.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 133,
+      "name": "cacke piece",
+      "price": null,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "BISKTS",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/133-cacke-piece.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 134,
+      "name": "Samosa 1Pc",
+      "price": 40,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "SAMOSA",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/134-samosa-1pc.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 135,
+      "name": "Cheeken Pakora",
+      "price": 1500,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "CHEKN",
+      "type": "finished",
+      "unit": "Kg",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/135-cheeken-pakora.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 136,
+      "name": "Chekin Stic 1Pc",
+      "price": 300,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "CHEKN",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/136-chekin-stic-1pc.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 137,
+      "name": "drumstick",
+      "price": 200,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "CHEKN",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/137-drumstick.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 138,
+      "name": "chicken pakora",
+      "price": null,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "SAMOSA",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/138-chicken-pakora.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 139,
+      "name": "Leg Pice 1",
+      "price": 300,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "CHEKN",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/139-leg-pice-1.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 140,
+      "name": "Burger Deal 1",
+      "price": 500,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Deals",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/140-burger-deal-1.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 141,
+      "name": "Chicken achari handi Haf",
+      "price": 800,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "CHEKN",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/141-chicken-achari-handi-haf.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 142,
+      "name": "chiekn angara",
+      "price": 1200,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "CHEKN",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/142-chiekn-angara.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 143,
+      "name": "Pizza Deal 2",
+      "price": 2300,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Deals",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/143-pizza-deal-2.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 144,
+      "name": "Pizza Deal 1",
+      "price": 1300,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Deals",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/144-pizza-deal-1.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 145,
+      "name": "Burger Deal 2",
+      "price": 1650,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Deals",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/145-burger-deal-2.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 146,
+      "name": "Celzon Pizza",
+      "price": 1200,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Deals",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/146-celzon-pizza.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 147,
+      "name": "Burger Deal 3",
+      "price": 400,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Deals",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/147-burger-deal-3.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 148,
+      "name": "Pizza Deal 3",
+      "price": 3050,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Deals",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/148-pizza-deal-3.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 149,
+      "name": "Pizza offer 1",
+      "price": 900,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Deals",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/149-pizza-offer-1.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 150,
+      "name": "Pizza Deal 4",
+      "price": 3300,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Deals",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/150-pizza-deal-4.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 151,
+      "name": "Birthday Deal",
+      "price": 6000,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Deals",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/151-birthday-deal.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 152,
+      "name": "Burger Deal 4",
+      "price": 1200,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Deals",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/152-burger-deal-4.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 153,
+      "name": "Matka Pizaa",
+      "price": 900,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Deals",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/153-matka-pizaa.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 154,
+      "name": "Matka Pizza 1",
+      "price": 1100,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Deals",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/154-matka-pizza-1.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 155,
+      "name": "Biryani Deal",
+      "price": 800,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Deals",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/155-biryani-deal.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 156,
+      "name": "Matka Biryani",
+      "price": 1000,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Deals",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/156-matka-biryani.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 157,
+      "name": "BRYINE SADA",
+      "price": 600,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Deals",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/157-bryine-sada.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
+    },
+    {
+      "id": 158,
+      "name": "SUPER OFFERS",
+      "price": 750,
+      "purchasePrice": null,
+      "costPrice": null,
+      "category": "Deals",
+      "type": "finished",
+      "unit": "Piece(s)",
+      "sku": null,
+      "barcode": null,
+      "lowThreshold": null,
+      "status": "active",
+      "image": "assets/products/158-super-offers.jpg",
+      "expiryTracked": false,
+      "stock": 0,
+      "branchStocks": [
+        {
+          "branchId": "warehouse",
+          "qty": 0
+        },
+        {
+          "branchId": 2,
+          "qty": 0
+        },
+        {
+          "branchId": 3,
+          "qty": 0
+        }
+      ]
     }
   ],
   "branches": [
@@ -1320,12 +4296,23 @@
     },
     {
       "id": 2,
-      "name": "Manager",
+      "name": "Warehouse",
       "username": "manager",
       "pinHash": "11908e709ed39a955bc8a3d448b736f344d873aedb5a02dabcf0693a6ec64065",
       "role": "Manager",
       "branchId": null,
       "branchName": null,
+      "isActive": true
+    },
+    {
+      "id": 3,
+      "name": "Counter Manager",
+      "username": "counter",
+      "pinHash": "59a52044930fc8ebb17b69c7733f2b5ad37d5758c3a574c0a36a70d3bea06f9e",
+      "role": "Counter Manager",
+      "branchId": null,
+      "branchName": null,
+      "isPosOnly": true,
       "isActive": true
     }
   ],
@@ -1343,6 +4330,30 @@
     "defaultLowStockLimit": null,
     "v100FreshSeedApplied": true,
     "v200SeedMigrated": true,
-    "v201WarehouseMigrated": true
-  }
+    "v201WarehouseMigrated": true,
+    "managerCanSeeCost": false,
+    "posServiceCharge": {
+      "type": "flat",
+      "value": 0
+    },
+    "posBillCopies": 1,
+    "kotEnabled": true,
+    "kotRemarks": true,
+    "backupFormatVersion": 2,
+    "v210Migrated": true
+  },
+  "sales": [],
+  "saleLines": [],
+  "heldOrders": [],
+  "khataCustomers": [],
+  "khataPayments": [],
+  "shifts": [],
+  "staff": [],
+  "staffAttendance": [],
+  "shiftExpenses": [],
+  "deletedSales": [],
+  "batches": [],
+  "wastage": [],
+  "expenses": [],
+  "recipes": []
 }

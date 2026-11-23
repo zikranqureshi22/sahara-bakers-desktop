@@ -18,7 +18,7 @@ function notify(m, t) { window.App.notify(m, t); }
 function esc(s) { return window.esc(s); }
 function el(html) { return window.el(html); }
 
-const APP_VERSION = '2.0.0';
+const APP_VERSION = '2.1.0';
 
 function renderSettings(container) {
   container.innerHTML = '';
@@ -69,6 +69,29 @@ function renderSettings(container) {
   });
   nCard.appendChild(nForm);
   wrap.appendChild(nCard);
+
+  // ---- v2.1.0 — Cost — Manager ko dikhaye (Owner-only) ----
+  // Toggle sirf Owner ko dikhta hai (Settings screen khud
+  // OWNER_ONLY hai; ye check belt-and-braces hai). Default OFF:
+  // Manager ko kisi item ki Cost / Purchase Price nahi dikhegi.
+  // ON ho to Manager cost DEKH sakta hai, edit phir bhi nahi kar
+  // sakta — cost sirf Owner DB.setItemCostPrice se set karta hai.
+  if (window.App.user && window.App.user.role === 'Owner') {
+    const cCard = el('<div class="card"><h2>Cost — Manager ko dikhaye</h2></div>');
+    const cForm = el('<form></form>');
+    const costOn = el('<label style="display:flex;align-items:center;gap:10px;font-weight:600"><input type="checkbox" id="mgr-cost-on"' + (settings.managerCanSeeCost ? ' checked' : '') + '> Manager ko Cost dikhaye</label>');
+    cForm.appendChild(costOn);
+    cForm.appendChild(el('<p class="muted">OFF (default) ho to Warehouse Manager ko kisi item ki Cost / Purchase Price nahi dikhegi — sirf "—" dikhega. ON ho to Manager cost dekh sakta hai, edit phir bhi nahi kar sakta.</p>'));
+    cForm.appendChild(el('<div class="form-actions"><button type="submit" class="btn btn-primary">Save</button></div>'));
+    cForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      settings.managerCanSeeCost = !!cForm.querySelector('#mgr-cost-on').checked;
+      window.App.save();
+      notify('Ho Gaya ✓ — Cost setting save ho gayi — Manager ko cost ' + (settings.managerCanSeeCost ? 'dikhegi' : 'nahi dikhegi'), 'success');
+    });
+    cCard.appendChild(cForm);
+    wrap.appendChild(cCard);
+  }
 
   // ---- Printer (thermal bill) ----
   const prCard = el('<div class="card"><h2>Printer — Thermal Bill</h2></div>');
@@ -135,23 +158,27 @@ function renderSettings(container) {
     }
   });
   bkRow.querySelector('#bk-export').addEventListener('click', () => {
+    // v2.1.0 — Backup guard: export writes the WRAPPER format
+    // {app:'sahara-bakers-backup', version, exportedAt, data}
+    // (frozen DB.exportBackup), not the raw state.
+    const payload = DB.exportBackup ? DB.exportBackup() : { app: 'sahara-bakers-backup', version: 2, exportedAt: new Date().toISOString(), data: DB.state };
     try {
       const fs = require('fs');
       const path = require('path');
       const os = require('os');
-      const dest = path.join(os.homedir(), 'Desktop', 'sahara-bakers-export-' + new Date().toISOString().slice(0, 10) + '.json');
-      fs.writeFileSync(dest, JSON.stringify(DB.state, null, 2), 'utf8');
-      notify('Ho Gaya ✓ — Data export ho gaya: ' + dest, 'success');
+      const dest = path.join(os.homedir(), 'Desktop', 'sahara-bakers-backup-' + new Date().toISOString().slice(0, 10) + '.json');
+      fs.writeFileSync(dest, JSON.stringify(payload, null, 2), 'utf8');
+      notify('Ho Gaya ✓ — Backup export ho gaya: ' + dest, 'success');
     } catch (e) {
       // Fallback: download via a blob (works even without fs access).
       try {
-        const blob = new Blob([JSON.stringify(DB.state, null, 2)], { type: 'application/json' });
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = 'sahara-bakers-export.json';
+        a.download = 'sahara-bakers-backup.json';
         a.click();
         setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-        notify('Ho Gaya ✓ — Data export download ho gaya', 'success');
+        notify('Ho Gaya ✓ — Backup export download ho gaya', 'success');
       } catch (e2) {
         notify('Issue — Export nahi ho saka', 'error');
       }
@@ -167,17 +194,20 @@ function renderSettings(container) {
     if (!ok) { e.target.value = ''; return; }
     try {
       const text = await file.text();
-      const parsed = JSON.parse(text);
-      if (!parsed || !Array.isArray(parsed.products) || !Array.isArray(parsed.appUsers)) throw new Error('File ka format durust nahi hai');
-      // Safety copy of the current state first.
-      try { if (DB.backup) DB.backup(); } catch (e2) { /* ignore */ }
-      DB.state = Object.assign(DB.state, parsed);
+      // v2.1.0 — Backup guard: frozen DB.importBackup validates FIRST
+      // (valid JSON, app, version, zaroori tables, active Owner,
+      // khaali-backup guard) and only then replaces the state, after
+      // a safety backup. On ANY rejection the current data stays
+      // untouched. The validator's Roman Urdu message is shown as-is;
+      // a legacy raw-format backup is accepted WITH its warning text.
+      const res = DB.importBackup ? DB.importBackup(text) : { ok: false, message: 'Import available nahi hai' };
+      if (!res.ok) { notify('Issue — ' + (res.message || 'Import nahi ho saka'), 'error'); return; }
       window.App.state = DB.state;
-      window.App.save();
-      notify('Ho Gaya ✓ — Data import ho gaya — Items ' + (parsed.products || []).length + ', Logins ' + (parsed.appUsers || []).length, 'success');
+      const warn = res.warning ? ' — ' + res.warning : '';
+      notify('Ho Gaya ✓ — Data import ho gaya — Items ' + res.products + ', Logins ' + res.logins + ', Sales ' + res.sales + ', Transfers ' + res.transfers + warn, 'success');
       renderSettings(container);
     } catch (err) {
-      notify('Issue — Import nahi ho saka: file ka format durust nahi hai', 'error');
+      notify('Issue — Import nahi ho saka: ' + (err && err.message ? err.message : 'file parhi nahi ja saki'), 'error');
     }
     e.target.value = '';
   });

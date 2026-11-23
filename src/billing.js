@@ -24,7 +24,7 @@ function renderBilling(container) {
 
   const wrap = el('<div></div>');
   wrap.appendChild(el('<div class="screen-head"><h1>Billing</h1></div>'));
-  wrap.appendChild(el('<p class="muted">Production bills (PB-…) aur transfer bills (SB-…) — kisi bhi bill par click kar ke dobara print ya PDF save karein.</p>'));
+  wrap.appendChild(el('<p class="muted">Production bills (PB-…), transfer bills (SB-…) aur sale bills (SL-…) — kisi bhi bill par click kar ke dobara print ya PDF save karein.</p>'));
 
   const pCard = el('<div class="card"><h2>Production Bills</h2></div>');
   if (prods.length === 0) pCard.appendChild(el('<p class="muted">Abhi tak koi production bill nahi hai.</p>'));
@@ -58,6 +58,25 @@ function renderBilling(container) {
     }));
   }
   wrap.appendChild(tCard);
+
+  // ---- v2.1.0: Sale Bills (SL-...) alongside PB/SB ----
+  const sales = (st.sales || []).slice().sort((a, b) => String(b.occurredAt || '').localeCompare(String(a.occurredAt || '')));
+  const sCard = el('<div class="card"><h2>Sale Bills</h2></div>');
+  if (sales.length === 0) sCard.appendChild(el('<p class="muted">Abhi tak koi sale bill nahi hai — Counter Sale se sale karein.</p>'));
+  else {
+    const rows = sales.map((s) => {
+      const typeLabel = (s.note && String(s.note).indexOf('Road Side') !== -1) ? 'Road Side'
+        : s.orderType === 'dine_in' ? 'Dine-in' + (s.tableNo != null ? ' — Table ' + s.tableNo : '')
+        : s.orderType === 'delivery' ? 'Online Delivery' : 'Take Away';
+      return '<tr><td><b>' + esc(window.App.saleBillNo ? window.App.saleBillNo(s) : ('SL-' + String(s.saleNo).padStart(4, '0'))) + '</b>' + (s.voidedAt ? ' <span class="void-stamp">VOID</span>' : '') + '</td><td>' + esc(typeLabel) + '</td><td>' + esc(s.cashierName || '') + '</td><td>' + esc(s.paymentMethod || '') + '</td><td><b>' + money(s.total) + '</b></td><td class="muted">' + esc(String(s.occurredAt || '').slice(0, 16).replace('T', ' ')) + '</td><td><button type="button" class="btn btn-sm" data-sbill="' + esc(s.id) + '">Bill</button></td></tr>';
+    }).join('');
+    sCard.appendChild(el('<div class="table-wrap"><table><thead><tr><th>Bill No</th><th>Type</th><th>Cashier</th><th>Payment</th><th>Total</th><th>Date</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'));
+    sCard.querySelectorAll('button[data-sbill]').forEach((btn) => btn.addEventListener('click', () => {
+      const s = sales.find((x) => String(x.id) === String(btn.getAttribute('data-sbill')));
+      if (s && window.App.showSaleBill) window.App.showSaleBill(s);
+    }));
+  }
+  wrap.appendChild(sCard);
 
   container.appendChild(wrap);
 }

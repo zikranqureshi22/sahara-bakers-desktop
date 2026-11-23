@@ -35,15 +35,24 @@ function renderPurchases(container) {
   ).join('') + '</select>');
   const paidIn = el('<input class="input" type="number" min="0" step="0.01" placeholder="Paid amount (optional)">');
   const linesWrap = el('<div id="purchase-lines" style="margin-top:12px"></div>');
-  const lines = []; // [{productId, qty, unitPrice}]
+  const lines = []; // [{productId, qty, unitPrice, expiryDate}] — expiryDate sirf expiry-tracked items par hoti hai
   const addRow = el('<div class="form-row"></div>');
   const addItemSel = el('<select class="input">' + products.map((p) =>
     '<option value="' + esc(p.id) + '">' + esc(p.name) + ' (' + esc(p.unit || '') + ')</option>'
   ).join('') + '</select>');
   const addQtyIn = el('<input class="input" type="number" min="0" step="any" placeholder="Miqdaar">');
   const addPriceIn = el('<input class="input" type="number" min="0" step="0.01" placeholder="Unit price (Rs)">');
+  // v2.1.0 — Expiry: expiry-date input sirf expiry-tracked items par dikhta hai.
+  const addExpiryIn = el('<input class="input" id="purchase-expiry" type="date" title="Expiry date" style="display:none">');
   const addBtn = el('<button type="button" class="btn">+ Add Purchase</button>');
-  addRow.appendChild(addItemSel); addRow.appendChild(addQtyIn); addRow.appendChild(addPriceIn); addRow.appendChild(addBtn);
+  addRow.appendChild(addItemSel); addRow.appendChild(addQtyIn); addRow.appendChild(addPriceIn); addRow.appendChild(addExpiryIn); addRow.appendChild(addBtn);
+  // Tracked item chunte hi expiry input dikhao, warna chhupao.
+  function syncExpiryInput() {
+    const p = products.find((x) => String(x.id) === String(addItemSel.value));
+    if (p && p.expiryTracked) { addExpiryIn.style.display = ''; }
+    else { addExpiryIn.style.display = 'none'; addExpiryIn.value = ''; }
+  }
+  addItemSel.addEventListener('change', syncExpiryInput);
   const totalEl = el('<p class="muted" id="purchase-total"></p>');
 
   function drawLines() {
@@ -53,7 +62,7 @@ function renderPurchases(container) {
     } else {
       const rows = lines.map((ln, i) => {
         const p = products.find((x) => String(x.id) === String(ln.productId));
-        return '<tr><td>' + esc(p ? p.name : '') + '</td><td><b>' + ln.qty + '</b></td><td>' + money(ln.unitPrice) + '</td><td><b>' + money(ln.qty * ln.unitPrice) + '</b></td><td><button type="button" class="btn btn-sm" data-i="' + i + '">Hataein</button></td></tr>';
+        return '<tr><td>' + esc(p ? p.name : '') + (ln.expiryDate ? '<br><span class="muted">Expiry: ' + esc(ln.expiryDate) + '</span>' : '') + '</td><td><b>' + ln.qty + '</b></td><td>' + money(ln.unitPrice) + '</td><td><b>' + money(ln.qty * ln.unitPrice) + '</b></td><td><button type="button" class="btn btn-sm" data-i="' + i + '">Hataein</button></td></tr>';
       }).join('');
       linesWrap.appendChild(el('<div class="table-wrap"><table><thead><tr><th>Item</th><th>Qty</th><th>Unit Price</th><th>Line Total</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'));
       linesWrap.querySelectorAll('button[data-i]').forEach((b) => b.addEventListener('click', () => {
@@ -71,11 +80,15 @@ function renderPurchases(container) {
     if (!p) { notify('Issue — Pehle item chunein', 'error'); return; }
     if (!qty || qty <= 0) { notify('Issue — Miqdaar durust likhein', 'error'); return; }
     if (addPriceIn.value === '' || isNaN(price) || price < 0) { notify('Issue — Unit price durust likhein', 'error'); return; }
-    const existing = lines.find((ln) => String(ln.productId) === String(p.id) && ln.unitPrice === price);
+    // v2.1.0 — Expiry: tracked item par expiry date zaroori hai (DB.addBatch bhi yehi mangta hai).
+    const expiryDate = addExpiryIn.value ? addExpiryIn.value.slice(0, 10) : '';
+    if (p.expiryTracked && !/^\d{4}-\d{2}-\d{2}$/.test(expiryDate)) { notify('Issue — "' + p.name + '" expiry-tracked hai — expiry date zaroori hai', 'error'); return; }
+    const existing = lines.find((ln) => String(ln.productId) === String(p.id) && ln.unitPrice === price && String(ln.expiryDate || '') === expiryDate);
     if (existing) existing.qty += qty;
-    else lines.push({ productId: p.id, qty, unitPrice: price });
+    else lines.push({ productId: p.id, qty, unitPrice: price, expiryDate: expiryDate || null });
     addQtyIn.value = '';
     addPriceIn.value = '';
+    addExpiryIn.value = '';
     drawLines();
   });
 
@@ -118,17 +131,25 @@ function renderPurchases(container) {
       branchId, createdBy: window.App.user ? window.App.user.name : '',
     };
     S().purchases.unshift(purchase);
+    let batchError = null;
     lines.forEach((ln) => {
       const p = products.find((x) => String(x.id) === String(ln.productId));
       S().purchaseLines.push({ id: DB.nextId('purchaseLines'), purchaseId: purchase.id, productId: ln.productId, qty: ln.qty, unitPrice: ln.unitPrice, lineTotal: ln.qty * ln.unitPrice });
       // Auto stock-in: the purchased quantity lands in the branch stock.
       if (p) window.App.adjustStock(p, branchId, ln.qty, 'Purchase — ' + invoiceNo, invoiceNo);
+      // v2.1.0 — Expiry: tracked item ki purchase par batch banao (FEFO ke liye).
+      // Master purchasePrice kabhi overwrite nahi hota — ye behaviour waisa hi hai.
+      if (p && p.expiryTracked && ln.expiryDate && DB.addBatch) {
+        const br = DB.addBatch({ productId: p.id, qty: ln.qty, expiryDate: ln.expiryDate, purchaseId: purchase.id, branchId });
+        if (!br.ok && !batchError) batchError = br.message;
+      }
     });
     window.App.save();
     lines.length = 0;
     drawLines();
     invIn.value = ''; supplierIn.value = ''; paidIn.value = '';
     notify('Ho Gaya ✓ — Purchase ' + invoiceNo + ' save ho gayi — kul ' + money(total) + ', stock auto add ho gaya', 'success');
+    if (batchError) notify('Issue — Batch nahi ban saka: ' + batchError, 'error');
     renderPurchases(container);
   });
   pCard.appendChild(form);
@@ -153,6 +174,7 @@ function renderPurchases(container) {
 
   container.appendChild(wrap);
   drawLines();
+  syncExpiryInput();
 }
 
 window.Screens.purchases = renderPurchases;

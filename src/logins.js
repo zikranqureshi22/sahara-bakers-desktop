@@ -16,7 +16,7 @@ function notify(m, t) { window.App.notify(m, t); }
 function esc(s) { return window.esc(s); }
 function el(html) { return window.el(html); }
 
-const ROLES = ['Owner', 'Manager', 'Warehouse Staff', 'Branch'];
+const ROLES = ['Owner', 'Manager', 'Warehouse Staff', 'Branch', 'Counter Manager'];
 
 function renderLogins(container) {
   container.innerHTML = '';
@@ -118,6 +118,8 @@ function renderLogins(container) {
       return;
     }
     const branchId = branchSel.value === '' ? null : window.App.normBranchId(branchSel.value);
+    // v2.1.0 — Counter Manager login hamesha POS-only hota hai
+    // (seed jaisa: role 'Counter Manager', isPosOnly true).
     const nu = {
       id: DB.nextId('appUsers'),
       name, username,
@@ -125,6 +127,7 @@ function renderLogins(container) {
       role, branchId,
       branchName: branchId != null ? window.App.branchName(branchId) : null,
       isActive: true,
+      isPosOnly: role === 'Counter Manager',
     };
     S().appUsers.push(nu);
     window.App.save();

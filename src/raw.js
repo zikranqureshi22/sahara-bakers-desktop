@@ -15,6 +15,14 @@ function S() { return (window.App && window.App.state) || state; }
 function notify(m, t) { window.App.notify(m, t); }
 function esc(s) { return window.esc(s); }
 function el(html) { return window.el(html); }
+// v2.1.0 — cost gating: cost sirf tab dikhe jab
+// DB.canSeeCost(currentUser) true ho (Owner hamesha; Manager sirf
+// jab Owner ne settings.managerCanSeeCost ON kiya ho).
+function canSeeCost() {
+  if (DB.canSeeCost) return DB.canSeeCost(window.App.user);
+  return !!(window.App.user && window.App.user.role === 'Owner');
+}
+function isOwner() { return !!(window.App.user && window.App.user.role === 'Owner'); }
 
 let currentQuery = '';
 
@@ -72,7 +80,9 @@ function renderRaw(container) {
         '<td>' + esc(p.unit || '') + '</td>' +
         '<td><b>' + qty + '</b>' + (low ? ' <span class="low-tag">Kam Stock</span>' : '') + '</td>' +
         '<td><b>' + avail + '</b> ' + esc(p.unit || '') + ' <span class="muted">(godown)</span></td>' +
-        '<td>' + esc(window.App.moneyOrDash(p.purchasePrice)) + '</td>' +
+        // v2.1.0 — Purchase Price sirf canSeeCost() walon ko dikhe,
+        // warna "—" (blank cost bhi "—").
+        '<td>' + (canSeeCost() ? esc(window.App.moneyOrDash(p.purchasePrice)) : '—') + '</td>' +
         '<td>' + esc(window.App.moneyOrDash(p.price)) + '</td>' +
         '<td>' + '<button type="button" class="btn btn-sm raw-details" data-id="' + esc(p.id) + '">Details</button></td></tr>';
     }).join('');
@@ -123,16 +133,23 @@ function renderRaw(container) {
     const unitSel = el('<select id="rf-unit-sel" class="input">' + unitOptions(prod.unit || 'Kg') + '</select>');
     const unitCustom = el('<input id="rf-unit-custom" class="input" type="text" placeholder="Custom unit likhein (jaise Pack, Dozen)" style="display:none">');
     const qtyIn = el('<input id="rf-qty" class="input" type="number" min="0" step="any" value="' + (isNew ? '' : window.App.stockOf(prod, warehouseId)) + '" placeholder="Godown mein miqdaar (optional)">');
-    const purchIn = el('<input id="rf-purchase" class="input" type="number" min="0" step="0.01" value="' + (prod.purchasePrice != null ? esc(prod.purchasePrice) : '') + '" placeholder="Purchase price (Rs) — blank chhod sakte hain">');
+    // v2.1.0 — Purchase Price field sirf Owner ko dikhe. Non-Owner
+    // ko form mein cost field milta hi nahi.
+    const purchIn = isOwner() ? el('<input id="rf-purchase" class="input" type="number" min="0" step="0.01" value="' + (prod.purchasePrice != null ? esc(prod.purchasePrice) : '') + '" placeholder="Purchase price (Rs) — blank chhod sakte hain">') : null;
     const priceIn = el('<input id="rf-price" class="input" type="number" min="0" step="0.01" value="' + (prod.price != null ? esc(prod.price) : '') + '" placeholder="Sale price (Rs) — blank chhod sakte hain">');
     const detailsIn = el('<textarea id="rf-details" class="input" rows="2" placeholder="Details (optional)">' + esc(prod.details || '') + '</textarea>');
     form.appendChild(el('<label>Name</label>')); form.appendChild(nameIn);
     form.appendChild(el('<label>Category</label>')); form.appendChild(catIn);
     form.appendChild(el('<label>Unit</label>')); form.appendChild(unitSel); form.appendChild(unitCustom);
     form.appendChild(el('<label>Godown Stock (Quantity)</label>')); form.appendChild(qtyIn);
-    form.appendChild(el('<label>Purchase Price (Rs)</label>')); form.appendChild(purchIn);
+    if (isOwner()) { form.appendChild(el('<label>Purchase Price (Rs)</label>')); form.appendChild(purchIn); }
     form.appendChild(el('<label>Sale Price (Rs)</label>')); form.appendChild(priceIn);
     form.appendChild(el('<label>Details</label>')); form.appendChild(detailsIn);
+    // v2.1.0 — Owner ke liye maujooda item edit karte waqt Cost
+    // Price ke ilawa SAB fields read-only/disabled hain.
+    if (isOwner() && !isNew) {
+      [nameIn, catIn, unitSel, qtyIn, priceIn, detailsIn].forEach((inp) => { inp.disabled = true; });
+    }
     const row = el('<div class="form-actions"></div>');
     row.appendChild(el('<button type="submit" class="btn btn-primary">Save</button>'));
     row.appendChild(el('<button type="button" class="btn" id="rf-cancel">Cancel</button>'));
@@ -151,19 +168,29 @@ function renderRaw(container) {
         unit = unitCustom.value.trim();
         if (!unit) { notify('Issue — Custom unit likhein', 'error'); return; }
       }
+      // v2.1.0 — cost gating: purchasePrice kabhi is form ke rec
+      // mein nahi jata. Owner ki cost sirf DB.setItemCostPrice se
+      // badalti hai; Manager ki edit central DB.updateItem se save
+      // hoti hai (jo purchasePrice/costPrice patch se khud drop
+      // karta hai). Godown stock set karna Owner ke liye disabled
+      // hai (qty field read-only), is liye wahan koi movement nahi
+      // banti.
       const rec = {
         name, type: 'raw', category: catIn.value.trim(), unit,
         price: priceIn.value === '' ? null : Number(priceIn.value),
-        purchasePrice: purchIn.value === '' ? null : Number(purchIn.value),
         details: detailsIn.value.trim() || null,
       };
-      if (DB.checkUniqueness) {
-        const chk = DB.checkUniqueness('products', rec, isNew ? null : prod.id);
-        if (!chk.ok) { notify('Issue — ' + chk.message, 'error'); return; }
-      }
       if (isNew) {
-        const np = Object.assign({ id: DB.nextId('products'), status: 'active', image: '', stock: 0, branchStocks: (S().branches || []).map((b) => ({ branchId: b.id, qty: 0 })) }, rec);
+        if (DB.checkUniqueness) {
+          const chk = DB.checkUniqueness('products', rec, null);
+          if (!chk.ok) { notify('Issue — ' + chk.message, 'error'); return; }
+        }
+        const np = Object.assign({ id: DB.nextId('products'), status: 'active', image: '', purchasePrice: null, stock: 0, branchStocks: (S().branches || []).map((b) => ({ branchId: b.id, qty: 0 })) }, rec);
         S().products.push(np);
+        if (isOwner() && purchIn && purchIn.value !== '') {
+          const cRes = DB.setItemCostPrice ? DB.setItemCostPrice(np.id, Number(purchIn.value), window.App.user) : { ok: false, message: 'Cost price set nahi ho saki' };
+          if (!cRes.ok) notify('Issue — ' + (cRes.message || 'Cost price set nahi ho saki'), 'error');
+        }
         const q0 = Number(qtyIn.value);
         if (q0 > 0) {
           window.App.setStock(np, warehouseId, q0);
@@ -173,8 +200,20 @@ function renderRaw(container) {
         closeForm();
         notify('Ho Gaya ✓ — Raw item add ho gaya: ' + name, 'success');
         renderRaw(container);
+      } else if (isOwner()) {
+        // Owner edit: sirf Cost Price editable hai — baqi fields
+        // disabled hain, is liye yahan sirf cost save hoti hai.
+        const cRes = DB.setItemCostPrice ? DB.setItemCostPrice(prod.id, purchIn.value === '' ? null : Number(purchIn.value), window.App.user) : { ok: false, message: 'Cost price set nahi ho saki' };
+        if (!cRes.ok) { notify('Issue — ' + (cRes.message || 'Cost price set nahi ho saki'), 'error'); return; }
+        window.App.save();
+        closeForm();
+        notify('Ho Gaya ✓ — Cost price update ho gaya: ' + (prod.name || ''), 'success');
+        renderRaw(container);
       } else {
-        Object.assign(prod, rec);
+        const patch = { name, type: 'raw', category: catIn.value.trim(), unit, price: rec.price };
+        const res = DB.updateItem ? DB.updateItem(prod.id, patch, window.App.user) : { ok: true };
+        if (!res.ok) { notify('Issue — ' + (res.message || 'Raw item update nahi ho saka'), 'error'); return; }
+        prod.details = rec.details;
         const q1 = qtyIn.value === '' ? null : Number(qtyIn.value);
         if (q1 != null && q1 >= 0) {
           const before = window.App.stockOf(prod, warehouseId);

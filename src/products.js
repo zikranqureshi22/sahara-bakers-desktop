@@ -15,6 +15,14 @@ function S() { return (window.App && window.App.state) || state; }
 function notify(m, t) { window.App.notify(m, t); }
 function esc(s) { return window.esc(s); }
 function el(html) { return window.el(html); }
+// v2.1.0 — cost gating: cost sirf tab dikhe jab
+// DB.canSeeCost(currentUser) true ho (Owner hamesha; Manager sirf
+// jab Owner ne settings.managerCanSeeCost ON kiya ho).
+function canSeeCost() {
+  if (DB.canSeeCost) return DB.canSeeCost(window.App.user);
+  return !!(window.App.user && window.App.user.role === 'Owner');
+}
+function isOwner() { return !!(window.App.user && window.App.user.role === 'Owner'); }
 
 let currentQuery = '';
 let currentFilter = 'all';
@@ -70,9 +78,10 @@ function renderProducts(container) {
         imgHtml +
         '<div class="p-name">' + esc(p.name) + '</div>' +
         '<div class="p-meta">' + esc(p.category || '') + ' · ' + (p.type === 'raw' ? 'Raw Material' : 'Finish Goods') + ' · ' + esc(p.unit || '') + '</div>' +
-        (hasPrice
-          ? '<div class="p-price">' + esc(window.App.money(p.price)) + '</div>' + (p.purchasePrice != null ? '<div class="p-meta">Cost: ' + esc(window.App.money(p.purchasePrice)) + '</div>' : '')
-          : '') +
+        (hasPrice ? '<div class="p-price">' + esc(window.App.money(p.price)) + '</div>' : '') +
+        // v2.1.0 — Cost line sirf canSeeCost() walon ko dikhe, warna
+        // kuch nahi; blank cost "—" dikhaye, 0 ya andaza nahi.
+        (canSeeCost() ? '<div class="p-meta">Cost: ' + esc(window.App.moneyOrDash(p.purchasePrice)) + '</div>' : '') +
         '<div class="' + (hasPrice ? 'p-stock' : 'p-stock p-stock-strong') + '">Stock: <b>' + qty + '</b> ' + esc(p.unit || '') + (low ? ' · <span class="low-tag">Kam Stock</span>' : '') + '</div></div>';
     }).join('');
     tableWrap.appendChild(el('<div class="product-grid" id="products-grid">' + cards + '</div>'));
@@ -112,7 +121,10 @@ function renderProducts(container) {
     const unitSel = el('<select id="pf-unit-sel" class="input">' + unitOptions(prod.unit || 'Kg') + '</select>');
     const unitCustom = el('<input id="pf-unit-custom" class="input" type="text" placeholder="Custom unit likhein (jaise Pack, Dozen)" style="display:none">');
     const priceIn = el('<input id="pf-price" class="input" type="number" min="0" step="0.01" value="' + (prod.price != null ? esc(prod.price) : '') + '" placeholder="Sale price (blank chhod sakte hain)">');
-    const purchIn = el('<input id="pf-purchase" class="input" type="number" min="0" step="0.01" value="' + (prod.purchasePrice != null ? esc(prod.purchasePrice) : '') + '" placeholder="Purchase price / cost (blank chhod sakte hain)">');
+    // v2.1.0 — Cost Price field sirf Owner ko dikhe. Non-Owner ko
+    // form mein cost field milta hi nahi (DB.updateItem patch se
+    // purchasePrice waise bhi drop karta hai).
+    const purchIn = isOwner() ? el('<input id="pf-purchase" class="input" type="number" min="0" step="0.01" value="' + (prod.purchasePrice != null ? esc(prod.purchasePrice) : '') + '" placeholder="Purchase price / cost (blank chhod sakte hain)">') : null;
     const detailsIn = el('<textarea id="pf-details" class="input" rows="2" placeholder="Details (jaise 50 Kg bag, fresh, waghera)">' + esc(prod.details || '') + '</textarea>');
     const lowIn = el('<input id="pf-low" class="input" type="number" min="0" step="1" value="' + (prod.lowThreshold != null ? esc(prod.lowThreshold) : '') + '" placeholder="Low stock limit (blank = default)">');
     const skuIn = el('<input id="pf-sku" class="input" type="text" value="' + esc(prod.sku || '') + '" placeholder="SKU (optional)">');
@@ -122,11 +134,16 @@ function renderProducts(container) {
     form.appendChild(el('<label>Category</label>')); form.appendChild(catIn);
     form.appendChild(el('<label>Unit</label>')); form.appendChild(unitSel); form.appendChild(unitCustom);
     form.appendChild(el('<label>Sale Price (Rs)</label>')); form.appendChild(priceIn);
-    form.appendChild(el('<label>Purchase Price / Cost (Rs)</label>')); form.appendChild(purchIn);
+    if (isOwner()) { form.appendChild(el('<label>Purchase Price / Cost (Rs)</label>')); form.appendChild(purchIn); }
     form.appendChild(el('<label>Details</label>')); form.appendChild(detailsIn);
     form.appendChild(el('<label>Low Stock Limit</label>')); form.appendChild(lowIn);
     form.appendChild(el('<label>SKU</label>')); form.appendChild(skuIn);
     form.appendChild(el('<label>Barcode</label>')); form.appendChild(barcodeIn);
+    // v2.1.0 — Owner ke liye maujooda item edit karte waqt Cost
+    // Price ke ilawa SAB fields read-only/disabled hain.
+    if (isOwner() && !isNew) {
+      [nameIn, typeSel, catIn, unitSel, priceIn, detailsIn, lowIn, skuIn, barcodeIn].forEach((inp) => { inp.disabled = true; });
+    }
     const row = el('<div class="form-actions"></div>');
     row.appendChild(el('<button type="submit" class="btn btn-primary">Save</button>'));
     row.appendChild(el('<button type="button" class="btn" id="pf-cancel">Cancel</button>'));
@@ -145,28 +162,48 @@ function renderProducts(container) {
         unit = unitCustom.value.trim();
         if (!unit) { notify('Issue — Custom unit likhein', 'error'); return; }
       }
+      // v2.1.0 — cost gating: purchasePrice kabhi is form ke rec
+      // mein nahi jata. Owner ki cost sirf DB.setItemCostPrice se
+      // badalti hai; Manager ki edit central DB.updateItem se save
+      // hoti hai (jo purchasePrice/costPrice patch se khud drop
+      // karta hai).
       const rec = {
         name, type: typeSel.value, category: catIn.value.trim(), unit,
         price: priceIn.value === '' ? null : Number(priceIn.value),
-        purchasePrice: purchIn.value === '' ? null : Number(purchIn.value),
         details: detailsIn.value.trim() || null,
         lowThreshold: lowIn.value === '' ? null : Number(lowIn.value),
         sku: skuIn.value.trim() || null,
         barcode: barcodeIn.value.trim() || null,
       };
-      if (DB.checkUniqueness) {
-        const chk = DB.checkUniqueness('products', rec, isNew ? null : prod.id);
-        if (!chk.ok) { notify('Issue — ' + chk.message, 'error'); return; }
-      }
       if (isNew) {
-        const np = Object.assign({ id: DB.nextId('products'), status: 'active', image: '', stock: 0, branchStocks: (S().branches || []).map((b) => ({ branchId: b.id, qty: 0 })) }, rec);
+        if (DB.checkUniqueness) {
+          const chk = DB.checkUniqueness('products', rec, null);
+          if (!chk.ok) { notify('Issue — ' + chk.message, 'error'); return; }
+        }
+        const np = Object.assign({ id: DB.nextId('products'), status: 'active', image: '', purchasePrice: null, stock: 0, branchStocks: (S().branches || []).map((b) => ({ branchId: b.id, qty: 0 })) }, rec);
         S().products.push(np);
+        if (isOwner() && purchIn && purchIn.value !== '') {
+          const cRes = DB.setItemCostPrice ? DB.setItemCostPrice(np.id, Number(purchIn.value), window.App.user) : { ok: false, message: 'Cost price set nahi ho saki' };
+          if (!cRes.ok) notify('Issue — ' + (cRes.message || 'Cost price set nahi ho saki'), 'error');
+        }
         window.App.save();
         closeForm();
         notify('Ho Gaya ✓ — Product add ho gaya: ' + name, 'success');
         renderProducts(container);
+      } else if (isOwner()) {
+        // Owner edit: sirf Cost Price editable hai — baqi fields
+        // disabled hain, is liye yahan sirf cost save hoti hai.
+        const cRes = DB.setItemCostPrice ? DB.setItemCostPrice(prod.id, purchIn.value === '' ? null : Number(purchIn.value), window.App.user) : { ok: false, message: 'Cost price set nahi ho saki' };
+        if (!cRes.ok) { notify('Issue — ' + (cRes.message || 'Cost price set nahi ho saki'), 'error'); return; }
+        window.App.save();
+        closeForm();
+        notify('Ho Gaya ✓ — Cost price update ho gaya: ' + (prod.name || ''), 'success');
+        renderProducts(container);
       } else {
-        Object.assign(prod, rec);
+        const patch = { name, type: typeSel.value, category: catIn.value.trim(), unit, price: rec.price, lowThreshold: rec.lowThreshold, sku: rec.sku, barcode: rec.barcode };
+        const res = DB.updateItem ? DB.updateItem(prod.id, patch, window.App.user) : { ok: true };
+        if (!res.ok) { notify('Issue — ' + (res.message || 'Product update nahi ho saka'), 'error'); return; }
+        prod.details = rec.details;
         window.App.save();
         closeForm();
         notify('Ho Gaya ✓ — Product update ho gaya: ' + name, 'success');

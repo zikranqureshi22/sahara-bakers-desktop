@@ -1,4 +1,4 @@
-// Sahara Bakers — database layer (v2.0.0).
+// Sahara Bakers — database layer (v2.1.0).
 //
 // Single local JSON store, copied from the RARA POS v1.1.9 hardening
 // (the 2026-11-15 data-loss lesson). In Electron the data file lives in
@@ -42,9 +42,13 @@
 // State shape:
 //   products, branches, stockMovements, transfers, productions,
 //   purchases, purchaseLines, suppliers, appUsers, loginSecurity, settings
-// Product: {id, name, price, purchasePrice, category, type ('raw' |
+//   + v2.1.0: sales, saleLines, heldOrders, khataCustomers, khataPayments,
+//   shifts, staff, staffAttendance, shiftExpenses, deletedSales, batches,
+//   wastage, expenses, recipes
+// Product: {id, name, price, purchasePrice, costPrice (production-only,
+// null until a production sets it), category, type ('raw' |
 // 'finished'), unit, sku, barcode, lowThreshold, status, image,
-// stock, branchStocks:[{branchId, qty}]}. A branchStocks row whose
+// expiryTracked (default false), stock, branchStocks:[{branchId, qty}]}. A branchStocks row whose
 // branchId is DB.WAREHOUSE_ID ('warehouse') is warehouse stock;
 // rows with a numeric branchId are that branch's stock. Prices are
 // null until the user enters them in-app — never invented.
@@ -95,6 +99,24 @@ function emptyState() {
     purchaseLines: [],
     suppliers: [],
     appUsers: [],
+    // v2.1.0 — Counter POS tables (web v53 schema, local JSON port).
+    // Live web transactions are NEVER seeded: fresh installs start
+    // with all of these empty, and the v210 migration never touches
+    // existing rows in them.
+    sales: [],
+    saleLines: [],
+    heldOrders: [],
+    khataCustomers: [],
+    khataPayments: [],
+    shifts: [],
+    staff: [],
+    staffAttendance: [],
+    shiftExpenses: [],
+    deletedSales: [],
+    batches: [],
+    wastage: [],
+    expenses: [],
+    recipes: [],
     // PIN brute-force protection: per-username
     // { attempts, lockedUntil } — persisted here so restarting the app
     // does NOT reset the counter or the lock.
@@ -109,7 +131,15 @@ function emptyState() {
       sessionTimeoutMinutes: 15,
       printerName: '',
       lowStockNotifications: true,
-      defaultLowStockLimit: null
+      defaultLowStockLimit: null,
+      // v2.1.0 settings (defaults; see DB.canSeeCost / POS settings).
+      managerCanSeeCost: false,
+      posServiceCharge: { type: 'flat', value: 0 },
+      posBillCopies: 1,
+      kotEnabled: true,
+      kotRemarks: true,
+      backupFormatVersion: 2,
+      v210Migrated: false
     }
   };
 }
@@ -177,7 +207,10 @@ const DB = {
       if (u.username) idx.userByUsername.set(norm(u.username), u);
       trackMax('appUsers', u.id);
     });
-    ['transfers', 'productions', 'purchases', 'purchaseLines'].forEach((coll) => {
+    ['transfers', 'productions', 'purchases', 'purchaseLines',
+      'sales', 'saleLines', 'heldOrders', 'khataCustomers', 'khataPayments',
+      'shifts', 'staff', 'staffAttendance', 'shiftExpenses', 'deletedSales',
+      'batches', 'wastage', 'expenses', 'recipes'].forEach((coll) => {
       (st[coll] || []).forEach((r) => trackMax(coll, r.id));
     });
     this.indexes = idx;
@@ -458,12 +491,102 @@ const DB = {
         if (changed) { try { this.save(); } catch (e) { /* migration lives in memory until the next save */ } }
       } catch (e) { /* a failed migration must never block loading */ }
     }
+    // v2.1.0 migration (flag-guarded by settings.v210Migrated, runs
+    // exactly once on a v2.0.0 data file, never again). Fresh v2.1.0
+    // seeds already carry the flag as true, so this is a no-op there.
+    // A SAFETY BACKUP is taken FIRST (v200/v201 did not do this).
+    //   (a) Counter Manager login add (username 'counter', PIN 1234,
+    //       role 'Counter Manager', isPosOnly true) — only when no
+    //       user with username 'counter' AND no Counter Manager exists.
+    //       Existing PINs are NEVER changed.
+    //   (b) Manager display rename: exact name 'Manager' ->
+    //       'Warehouse'. Username 'manager' and PIN stay unchanged.
+    //       A name the user renamed himself is left alone.
+    //   (c) Seed merge of the 96 video-menu products (ids 63-158)
+    //       from seed.json: an id that already exists is SKIPPED —
+    //       existing rows (name/price/stock/photo/PIN) are NEVER
+    //       overwritten. New rows come in with stock 0 and a
+    //       warehouse branchStocks row. The merge only runs when the
+    //       file already holds products (a real v2.0.0 install): a
+    //       login-only recovery (0 products) stays empty — the
+    //       fresh-seed path owns the empty case.
+    //   (d) Any missing v2.1.0 table is created as an empty array.
+    //   (e) Missing settings keys are filled with defaults; existing
+    //       settings are never changed.
+    if (!this.state.settings || !this.state.settings.v210Migrated) {
+      try {
+        // Safety backup FIRST — but only when there is product data
+        // to protect. An empty (or login-only) state has nothing to
+        // lose, and writing a backup of it would pollute backups/
+        // with an empty file (it also broke the Electron L3b check,
+        // which asserts a fresh empty-state app writes NO backup).
+        if ((this.state.products || []).length > 0) {
+          try { this.backup(); } catch (e) { /* safety backup is best-effort */ }
+        }
+        let changed = false;
+        const users = this.state.appUsers || [];
+        const hasCounter = users.some((u) => String(u.username || '').toLowerCase() === 'counter' || u.role === 'Counter Manager');
+        if (!hasCounter && users.length > 0) {
+          users.push({ id: this.nextId('appUsers'), name: 'Counter Manager', username: 'counter',
+            pinHash: this.hashPin('1234'), role: 'Counter Manager', branchId: null, branchName: null,
+            isPosOnly: true, isActive: true });
+          changed = true;
+        }
+        const mgrUser = users.find((u) => u.name === 'Manager');
+        if (mgrUser) { mgrUser.name = 'Warehouse'; changed = true; }
+        const NEW_TABLES = ['sales', 'saleLines', 'heldOrders', 'khataCustomers', 'khataPayments',
+          'shifts', 'staff', 'staffAttendance', 'shiftExpenses', 'deletedSales',
+          'batches', 'wastage', 'expenses', 'recipes'];
+        NEW_TABLES.forEach((t) => {
+          if (!Array.isArray(this.state[t])) { this.state[t] = []; changed = true; }
+        });
+        if ((this.state.products || []).length > 0) {
+          try {
+            const seedRaw = fs.readFileSync(SEED_FILE, 'utf8');
+            const seedParsed = JSON.parse(seedRaw);
+            const have = new Set((this.state.products || []).map((p) => String(p.id)));
+            (seedParsed.products || []).forEach((sp) => {
+              if (Number(sp.id) < 63) return; // only the video-menu rows merge; base 44 are never touched
+              if (have.has(String(sp.id))) return;
+              this.state.products.push(JSON.parse(JSON.stringify(sp)));
+              have.add(String(sp.id));
+              changed = true;
+            });
+          } catch (e) { /* a missing/unreadable seed must never block the migration */ }
+        }
+        if (!this.state.settings) this.state.settings = {};
+        const s = this.state.settings;
+        const fill = (k, v) => { if (s[k] == null) { s[k] = v; changed = true; } };
+        fill('managerCanSeeCost', false);
+        fill('posServiceCharge', { type: 'flat', value: 0 });
+        fill('posBillCopies', 1);
+        fill('kotEnabled', true);
+        fill('kotRemarks', true);
+        fill('backupFormatVersion', 2);
+        s.v210Migrated = true;
+        if (changed) { this.buildIndexes(); try { this.save(); } catch (e) { /* migration lives in memory until the next save */ } }
+      } catch (e) { /* a failed migration must never block loading */ }
+    }
+    // Field defaults for older rows (idempotent, runs every load):
+    // products without expiryTracked behave as not tracked, and
+    // without costPrice as "no production cost yet". No row is ever
+    // overwritten — only a missing field is filled.
+    (this.state.products || []).forEach((p) => {
+      if (p.expiryTracked == null) p.expiryTracked = false;
+      if (p.costPrice === undefined) p.costPrice = null;
+    });
     // Settings defaults for older data files.
     if (!this.state.settings) this.state.settings = {};
     if (this.state.settings.sessionTimeoutMinutes == null) this.state.settings.sessionTimeoutMinutes = 15;
     if (this.state.settings.lowStockNotifications == null) this.state.settings.lowStockNotifications = true;
     if (this.state.settings.defaultLowStockLimit == null) this.state.settings.defaultLowStockLimit = null;
     if (!this.state.settings.currency) this.state.settings.currency = 'PKR';
+    if (this.state.settings.managerCanSeeCost == null) this.state.settings.managerCanSeeCost = false;
+    if (this.state.settings.posServiceCharge == null) this.state.settings.posServiceCharge = { type: 'flat', value: 0 };
+    if (this.state.settings.posBillCopies == null) this.state.settings.posBillCopies = 1;
+    if (this.state.settings.kotEnabled == null) this.state.settings.kotEnabled = true;
+    if (this.state.settings.kotRemarks == null) this.state.settings.kotRemarks = true;
+    if (this.state.settings.backupFormatVersion == null) this.state.settings.backupFormatVersion = 2;
     this.buildIndexes();
     return this.state;
   },
@@ -719,37 +842,61 @@ const DB = {
   },
 
   /* ---------- Stock Transfer Bill values ---------- */
-  // Per-item values for a transfer, from the product's CURRENT price.
-  // No price is ever invented: a product with price null contributes
-  // value null and sets the priceMissing flag so the UI can say so
-  // plainly. The bill is about stock GIVEN, so quantities are the
-  // dispatched qty. Read-only — no transfer record is ever changed.
+  // Per-item values for a transfer, from the line's stamped unitPrice
+  // when present, else the product's CURRENT price (old transfers
+  // carry no stamp, so the current price is the fallback — a line
+  // whose stamp is null AND whose current price is null contributes
+  // value null). No price is ever invented: a product with price null
+  // contributes value null and sets the priceMissing flag so the UI
+  // can say so plainly. The bill is about stock GIVEN, so quantities
+  // are the dispatched qty. Cost = qty x purchasePrice (null when the
+  // item has no purchase price); margin = value - cost when both are
+  // known, else null. Read-only — no transfer record is ever changed.
   // Returns { rows: [{productId, name, qty, unit, price, lineValue,
-  // priceMissing}], totals: {qty, value, valueKnown}, priceMissing }.
+  // priceMissing, costPrice, lineCost, lineMargin, marginKnown}],
+  // totals: {qty, value, valueKnown, cost, costKnown, margin,
+  // marginKnown}, priceMissing }.
   transferBillValues(transfer, products) {
     var byId = {};
     (products || []).forEach(function (p) { byId[String(p.id)] = p; });
     var rows = [];
-    var totals = { qty: 0, value: 0, valueKnown: true };
+    var totals = { qty: 0, value: 0, valueKnown: true, cost: 0, costKnown: true, margin: 0, marginKnown: true };
     var priceMissing = false;
     (transfer && Array.isArray(transfer.items) ? transfer.items : []).forEach(function (it) {
       var prod = it.productId != null ? byId[String(it.productId)] : null;
       var qty = Number(it.qty) || 0;
-      var price = prod && prod.price != null ? Number(prod.price) : null;
+      // Stamped supply value wins; current price is the fallback for
+      // pre-v2.1.0 transfers whose lines carry no stamp.
+      var price = (it.unitPrice != null && !isNaN(Number(it.unitPrice))) ? Number(it.unitPrice)
+        : (prod && prod.price != null ? Number(prod.price) : null);
       if (qty > 0 && (price == null || isNaN(price))) priceMissing = true;
+      var costPrice = (prod && prod.purchasePrice != null && !isNaN(Number(prod.purchasePrice))) ? Number(prod.purchasePrice) : null;
+      if (qty > 0 && costPrice == null) totals.costKnown = false;
       var row = {
         productId: it.productId != null ? String(it.productId) : null,
         name: (prod && prod.name) || it.name || it.productName || 'Item',
         unit: (prod && prod.unit) || it.unit || '',
         qty: qty, price: price,
         lineValue: price == null ? null : qty * price,
-        priceMissing: price == null
+        priceMissing: price == null,
+        costPrice: costPrice,
+        lineCost: costPrice == null ? null : qty * costPrice,
+        lineMargin: (price == null || costPrice == null) ? null : (qty * price - qty * costPrice),
+        marginKnown: price != null && costPrice != null
       };
       rows.push(row);
       totals.qty += qty;
       if (row.lineValue != null) totals.value += row.lineValue;
       else totals.valueKnown = false;
+      if (row.lineCost != null) totals.cost += row.lineCost;
+      else totals.marginKnown = false;
+      if (row.lineMargin != null) totals.margin += row.lineMargin;
+      else totals.marginKnown = false;
     });
+    if (!totals.costKnown) totals.cost = null;
+    if (!totals.marginKnown) totals.margin = null;
+    // When a value is unknown the partial sum stays, but
+    // valueKnown=false says plainly that it is incomplete.
     return { rows: rows, totals: totals, priceMissing: priceMissing };
   },
 
@@ -760,10 +907,15 @@ const DB = {
   },
 
   // Raw -> Finish production, as ONE validated transaction.
-  //   completeProduction({ finishProductId, finishQty, lines, createdBy, clientRef, warehouseBranchId })
+  //   completeProduction({ finishProductId, finishQty, lines, createdBy, clientRef, warehouseBranchId, user, recipeId })
   //   lines: [{ productId, qty }] — raw items and the quantity of
   //   each used. warehouseBranchId defaults to DB.WAREHOUSE_ID
   //   (the real Warehouse location, separate from the 3 branches).
+  //   user: the login doing the production (role 'Owner' is REJECTED
+  //   — the Owner never produces; Warehouse does). When no user is
+  //   passed (tests / legacy callers) the role check is skipped.
+  //   recipeId: when lines are omitted, the saved recipe's lines
+  //   are used instead.
   // Validation runs FIRST and rejects the whole cart when ANY line
   // is short — over-stock is rejected with NO stock moved at all.
   // On success: raw is deducted at the Warehouse, the finish is
@@ -773,12 +925,24 @@ const DB = {
   // Costing uses each raw item's purchasePrice; a line whose
   // purchasePrice is null contributes no cost and makes costKnown
   // false — no cost is ever invented. costPerUnit = totalCost /
-  // finishQty when the full cost is known, else null.
+  // finishQty when the full cost is known, else null. When costKnown,
+  // the finish item's costPrice is set to costPerUnit — production
+  // is the ONLY writer of costPrice (no UI edit ever touches it).
   // Returns { ok: true, production } or { ok: false, message }.
   completeProduction(opts) {
     const finishQty = Number(opts && opts.finishQty) || 0;
-    const lines = (opts && Array.isArray(opts.lines)) ? opts.lines : [];
+    let lines = (opts && Array.isArray(opts.lines)) ? opts.lines : [];
     const warehouseId = (opts && opts.warehouseBranchId != null) ? opts.warehouseBranchId : this.WAREHOUSE_ID;
+    // Owner gate: the Owner never runs production (web v53 rule).
+    const callerRole = (opts && opts.user && opts.user.role) || (opts && opts.callerRole) || null;
+    if (callerRole === 'Owner') return { ok: false, message: 'Owner production nahi kar sakta — production Warehouse ka kaam hai.' };
+    // Recipe lines: when no ad-hoc lines are given, a saved recipe
+    // supplies them (quantities are per-batch as stored on the recipe).
+    if (lines.length === 0 && opts && opts.recipeId != null) {
+      const recipe = (this.state.recipes || []).find((r) => String(r.id) === String(opts.recipeId));
+      if (!recipe) return { ok: false, message: 'Recipe nahi mili.' };
+      lines = (recipe.lines || []).map((l) => ({ productId: l.productId, qty: l.qty }));
+    }
     const finish = this.productById(opts && opts.finishProductId);
     if (!finish) return { ok: false, message: 'Finish item nahi mila — pehle finish item chunein.' };
     if (finish.type !== 'finished') return { ok: false, message: '"' + (finish.name || '') + '" finish item nahi hai — Production sirf Finish Goods ke liye hai.' };
@@ -837,10 +1001,17 @@ const DB = {
       lines: checked, totalCost, costKnown,
       costPerUnit: costKnown && finishQty > 0 ? totalCost / finishQty : null,
       remainingRaw, finalFinishStock, warehouseBranchId: warehouseId,
-      createdBy, clientRef
+      createdBy, clientRef, recipeId: (opts && opts.recipeId) || null
     };
     if (!Array.isArray(this.state.productions)) this.state.productions = [];
     this.state.productions.unshift(production);
+    // Production is the ONLY writer of products.costPrice: when the
+    // full cost is known, the finish item's cost becomes the
+    // per-unit production cost. When cost is unknown, the old
+    // costPrice (if any) is left exactly as it was.
+    if (production.costKnown && production.costPerUnit != null) {
+      finish.costPrice = production.costPerUnit;
+    }
     return { ok: true, production };
   },
 
@@ -931,6 +1102,8 @@ const DB = {
     if (reason.indexOf('Production') === 0) return false; // production consumption, not a sale
     if (reason.indexOf('Raw Item Edit') === 0) return false; // stock correction, not a sale
     if (reason.indexOf('Finish Item Edit') === 0) return false; // stock correction, not a sale
+    if (reason.indexOf('Wastage') === 0) return false; // wastage, not a sale
+    if (reason.indexOf('Sale') === 0) return true; // counter sale (Sale SL-0001 — ...)
     return true;
   },
 
@@ -984,6 +1157,1145 @@ const DB = {
     const lim = this.lowLimitFor(product);
     if (lim == null || isNaN(lim)) return false;
     return this.stockOf(product, branchId) <= lim;
+  },
+
+  /* ================= v2.1.0 — helpers ================= */
+  _ensureColl(name) {
+    if (!Array.isArray(this.state[name])) this.state[name] = [];
+    return this.state[name];
+  },
+  // Keep the cached max-id index in step after an insert, so a
+  // second nextId() in the same call (e.g. several sale lines in
+  // one sale) never hands out the same id twice.
+  _noteId(coll, id) {
+    const idx = this.indexes;
+    if (idx && typeof id === 'number' && (typeof idx.maxId[coll] !== 'number' || id > idx.maxId[coll])) idx.maxId[coll] = id;
+  },
+  // Local YYYY-MM-DD (the app works in the shop's local day).
+  _todayLocal(d) {
+    const dt = d instanceof Date ? d : new Date();
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const day = String(dt.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
+  },
+  _dayOf(iso) { return String(iso || '').slice(0, 10); },
+  _addDays(dayStr, n) {
+    const d = new Date(dayStr + 'T12:00:00');
+    d.setDate(d.getDate() + n);
+    return this._todayLocal(d);
+  },
+  // Date range for a chip: 'today' | 'yesterday' | 'thisWeek' |
+  // 'thisMonth'. Returns { from, to } as local YYYY-MM-DD.
+  dateRangeFor(chip) {
+    const today = this._todayLocal();
+    if (chip === 'yesterday') { const y = this._addDays(today, -1); return { from: y, to: y }; }
+    if (chip === 'thisWeek') {
+      const d = new Date(today + 'T12:00:00');
+      const dow = (d.getDay() + 6) % 7; // Monday = 0
+      return { from: this._addDays(today, -dow), to: today };
+    }
+    if (chip === 'thisMonth') return { from: today.slice(0, 8) + '01', to: today };
+    return { from: today, to: today };
+  },
+
+  /* ================= v2.1.0 — items & cost gating ================= */
+  // CENTRAL item patcher — every item edit in the app must go through
+  // this. purchasePrice AND costPrice are ALWAYS dropped from the
+  // patch, for Owner and non-Owner alike: purchasePrice changes only
+  // via DB.setItemCostPrice (Owner-only), costPrice only via
+  // production (DB.completeProduction). Returns { ok, product } or
+  // { ok: false, message }.
+  updateItem(productId, patch, user) {
+    const product = this.productById(productId);
+    if (!product) return { ok: false, message: 'Item nahi mila.' };
+    const clean = Object.assign({}, patch || {});
+    delete clean.purchasePrice;
+    delete clean.costPrice;
+    delete clean.id;
+    delete clean.stock;
+    delete clean.branchStocks;
+    const allowed = ['name', 'price', 'category', 'type', 'unit', 'sku', 'barcode', 'lowThreshold', 'status', 'image', 'expiryTracked'];
+    const next = {};
+    allowed.forEach((k) => { if (clean[k] !== undefined) next[k] = clean[k]; });
+    if (next.name != null && String(next.name).trim() === '') return { ok: false, message: 'Item ka naam khaali nahi ho sakta.' };
+    if (next.price != null && (isNaN(Number(next.price)) || Number(next.price) < 0)) return { ok: false, message: 'Price durust likhein (0 ya zyada).' };
+    const uniq = this.checkUniqueness('products', Object.assign({}, product, next), product.id);
+    if (!uniq.ok) return uniq;
+    Object.assign(product, next);
+    this.buildIndexes();
+    return { ok: true, product };
+  },
+
+  // Who may SEE a cost (purchasePrice / costPrice)? Owner: always.
+  // Manager (Warehouse): only when the Owner switched
+  // settings.managerCanSeeCost ON. Counter Manager and everyone
+  // else: never.
+  canSeeCost(user) {
+    if (!user) return false;
+    if (user.role === 'Owner') return true;
+    if (user.role === 'Manager') return (this.state.settings || {}).managerCanSeeCost === true;
+    return false;
+  },
+
+  // Owner-only cost setter: the ONLY way to change an item's
+  // purchasePrice (the master cost). A purchase never changes it,
+  // and updateItem never changes it. Returns { ok, product } or
+  // { ok: false, message }.
+  setItemCostPrice(itemId, purchasePrice, user) {
+    if (!user || user.role !== 'Owner') return { ok: false, message: 'Sirf Owner cost price set kar sakta hai.' };
+    const product = this.productById(itemId);
+    if (!product) return { ok: false, message: 'Item nahi mila.' };
+    if (purchasePrice != null && (isNaN(Number(purchasePrice)) || Number(purchasePrice) < 0)) {
+      return { ok: false, message: 'Cost price durust likhein (0 ya zyada, ya khaali).' };
+    }
+    product.purchasePrice = purchasePrice == null ? null : Number(purchasePrice);
+    return { ok: true, product };
+  },
+
+  // Bill number for a sale: SL-0001, SL-0002, ... (saleNo-based,
+  // same pad-4 pattern as SB-XXXX / PB-XXXX).
+  saleBillNo(sale) {
+    return 'SL-' + String(sale.saleNo == null ? '' : sale.saleNo).padStart(4, '0');
+  },
+
+  /* ================= v2.1.0 — shifts ================= */
+  // The one open shift, or null. At most one shift is open at a time.
+  getOpenShift() {
+    return (this.state.shifts || []).find((s) => s.status === 'open') || null;
+  },
+  getShiftState() {
+    const open = this.getOpenShift();
+    const closed = (this.state.shifts || []).filter((s) => s.status === 'closed')
+      .slice().sort((a, b) => String(b.endedAt || '').localeCompare(String(a.endedAt || '')));
+    return { openShift: open || null, history: closed };
+  },
+  // Start a shift. Rejects when another shift is already open.
+  // clientRef dedupe: the same clientRef returns the original shift.
+  // Returns { ok, shift } or { ok: false, message }.
+  startShift(opts) {
+    const open = this.getOpenShift();
+    if (open) return { ok: false, message: 'Aik shift pehle se khuli hui hai (' + (open.cashierName || 'Cashier') + ') — pehle usay band karein.' };
+    const clientRef = (opts && opts.clientRef) || null;
+    if (clientRef) {
+      const prev = (this.state.shifts || []).find((s) => s.clientRef === clientRef);
+      if (prev) return { ok: true, shift: prev, duplicate: true };
+    }
+    const opening = Number((opts && opts.openingBalance) || 0);
+    if (isNaN(opening) || opening < 0) return { ok: false, message: 'Opening balance durust likhein (0 ya zyada).' };
+    const shift = {
+      id: this.nextId('shifts'),
+      cashierId: (opts && opts.cashierId) || null,
+      cashierName: (opts && opts.cashierName) || '',
+      openingBalance: opening,
+      deposit: 0, withdrawal: 0, notes: '',
+      status: 'open',
+      startedAt: new Date().toISOString(),
+      endedAt: null,
+      clientRef: clientRef,
+      closeClientRef: null,
+      // Closing snapshot (stamped by closeShift, null while open).
+      totalSales: null, billCount: null, cashBills: null, khataPaid: null,
+      stillKhata: null, cardOther: null, cashInDrawer: null, nextOpening: null,
+      closing: null
+    };
+    this._ensureColl('shifts').push(shift);
+    this._noteId('shifts', shift.id);
+    return { ok: true, shift };
+  },
+  // Close a shift and stamp the closing snapshot. countedDrawer is
+  // the cash actually counted in the drawer; ownerDeposit /
+  // ownerWithdrawal are entered on the Close screen.
+  // expectedDrawer = opening + cashSales - expenses + deposit -
+  // withdrawal; difference = counted - expected. nextOpening =
+  // countedDrawer (the next shift opens with what was counted).
+  // Returns { ok, shift } or { ok: false, message }.
+  closeShift(opts) {
+    const shift = (this.state.shifts || []).find((s) => String(s.id) === String(opts && opts.shiftId));
+    if (!shift) return { ok: false, message: 'Shift nahi mili.' };
+    if (shift.status !== 'open') return { ok: false, message: 'Ye shift pehle se band hai.' };
+    const closeClientRef = (opts && opts.closeClientRef) || null;
+    if (closeClientRef && shift.closeClientRef === closeClientRef) return { ok: true, shift, duplicate: true };
+    const counted = Number((opts && opts.countedDrawer) || 0);
+    if (isNaN(counted) || counted < 0) return { ok: false, message: 'Counted cash durust likhein (0 ya zyada).' };
+    const deposit = Number((opts && opts.ownerDeposit) || 0);
+    const withdrawal = Number((opts && opts.ownerWithdrawal) || 0);
+    if (isNaN(deposit) || deposit < 0 || isNaN(withdrawal) || withdrawal < 0) {
+      return { ok: false, message: 'Deposit/withdrawal durust likhein (0 ya zyada).' };
+    }
+    const sales = (this.state.sales || []).filter((s) => String(s.shiftId) === String(shift.id) && !s.voidedAt);
+    const byPayment = {};
+    let totalSales = 0, cashSales = 0, khataPaid = 0, stillKhata = 0, cardOther = 0;
+    sales.forEach((s) => {
+      const t = Number(s.total) || 0;
+      totalSales += t;
+      byPayment[s.paymentMethod] = (byPayment[s.paymentMethod] || 0) + t;
+      if (s.paymentMethod === 'Cash') cashSales += t;
+      else if (s.paymentMethod === 'Khata') { khataPaid += Number(s.amountPaid) || 0; stillKhata += t - (Number(s.amountPaid) || 0); }
+      else cardOther += t;
+    });
+    const expensesTotal = (this.state.shiftExpenses || [])
+      .filter((e) => String(e.shiftId) === String(shift.id))
+      .reduce((a, e) => a + (Number(e.amount) || 0), 0);
+    const expectedDrawer = (Number(shift.openingBalance) || 0) + cashSales - expensesTotal + deposit - withdrawal;
+    const closing = {
+      openingBalance: Number(shift.openingBalance) || 0,
+      totalSales, billCount: sales.length, cashSales,
+      byPayment, khataPaid, stillKhata, cardOther,
+      expensesTotal, ownerDeposit: deposit, ownerWithdrawal: withdrawal,
+      expectedDrawer, countedDrawer: counted,
+      difference: counted - expectedDrawer,
+      nextOpening: counted,
+      closedBy: (opts && opts.recordedBy) || ''
+    };
+    shift.status = 'closed';
+    shift.endedAt = new Date().toISOString();
+    shift.deposit = deposit;
+    shift.withdrawal = withdrawal;
+    shift.notes = (opts && opts.notes) || '';
+    shift.closeClientRef = closeClientRef;
+    shift.totalSales = totalSales;
+    shift.billCount = sales.length;
+    shift.cashBills = cashSales;
+    shift.khataPaid = khataPaid;
+    shift.stillKhata = stillKhata;
+    shift.cardOther = cardOther;
+    shift.cashInDrawer = expectedDrawer;
+    shift.nextOpening = counted;
+    shift.closing = closing;
+    return { ok: true, shift };
+  },
+  // Shift expense (the Close Shift "Expenses" line). The shift must
+  // exist; amount must be > 0.
+  addShiftExpense(opts) {
+    const shift = (this.state.shifts || []).find((s) => String(s.id) === String(opts && opts.shiftId));
+    if (!shift) return { ok: false, message: 'Shift nahi mili — pehle shift start karein.' };
+    const amount = Number(opts && opts.amount) || 0;
+    if (!amount || amount <= 0) return { ok: false, message: 'Kharch ki raqam durust likhein (0 se zyada).' };
+    const expense = {
+      id: this.nextId('shiftExpenses'),
+      shiftId: shift.id,
+      amount,
+      note: (opts && opts.note) || '',
+      recordedBy: (opts && opts.recordedBy) || '',
+      occurredAt: (opts && opts.occurredAt) || new Date().toISOString()
+    };
+    this._ensureColl('shiftExpenses').push(expense);
+    this._noteId('shiftExpenses', expense.id);
+    return { ok: true, expense };
+  },
+  listShiftExpenses(shiftId) {
+    return (this.state.shiftExpenses || []).filter((e) => String(e.shiftId) === String(shiftId));
+  },
+
+  /* ================= v2.1.0 — counter sales ================= */
+  // Counter sale, as ONE validated transaction.
+  //   createSale({ lines: [{productId, qty}], orderType, tableNo,
+  //     branchId (null = warehouse counter), paymentMethod, customerId,
+  //     discount, deliveryCharges, serviceCharge, amountPaid, clientRef,
+  //     shiftId, cashierId, cashierName, note, recordedBy, occurredAt })
+  // Rules (web v53): an OPEN SHIFT is required — a sale with no open
+  // shift is rejected; every line must have a sale price (an unpriced
+  // item rejects the whole sale, nothing is cut); stock is deducted
+  // at the sale location (branchId, or the Warehouse when null) and
+  // one movement per line is recorded with reason 'Sale SL-…'
+  // (negative qty, so isSaleMovement counts it); clientRef dedupe —
+  // a second call with the same clientRef returns { duplicate: true }
+  // with the original sale and cuts no stock again. Prices are
+  // stamped from items.price at sale time. Khata sales need an
+  // existing khata customer; their unpaid rest is the balance due.
+  // total = subtotal - discount + deliveryCharges + serviceCharge.
+  // serviceCharge: when not passed, it is computed from
+  // settings.posServiceCharge (flat Rs, or % of subtotal).
+  // Returns { ok: true, sale, billNo } or { ok: false, message }.
+  createSale(opts) {
+    const lines = (opts && Array.isArray(opts.lines)) ? opts.lines : [];
+    const branchId = (opts && opts.branchId != null) ? opts.branchId : null;
+    const locId = branchId == null ? this.WAREHOUSE_ID : branchId;
+    const paymentMethods = ['Cash', 'JazzCash', 'Easypaisa', 'Card', 'Bank', 'Khata'];
+    const paymentMethod = (opts && opts.paymentMethod) || 'Cash';
+    if (paymentMethods.indexOf(paymentMethod) === -1) return { ok: false, message: 'Payment method durust chunein.' };
+    if (lines.length === 0) return { ok: false, message: 'Pehle cart mein kam az kam aik item add karein.' };
+    // Shift gate: an explicit shiftId wins, else the open shift.
+    let shift = null;
+    if (opts && opts.shiftId != null) {
+      shift = (this.state.shifts || []).find((s) => String(s.id) === String(opts.shiftId));
+    }
+    if (!shift) shift = this.getOpenShift();
+    if (!shift || shift.status !== 'open') {
+      return { ok: false, message: 'Pehle shift start karein — bina shift ke sale nahi ho sakti.' };
+    }
+    // Idempotency FIRST: the same clientRef returns the original sale.
+    const clientRef = (opts && opts.clientRef) || null;
+    if (clientRef) {
+      const prev = (this.state.sales || []).find((s) => s.clientRef === clientRef);
+      if (prev) return { ok: true, sale: prev, billNo: this.saleBillNo(prev), duplicate: true };
+    }
+    // Khata needs a real customer.
+    let customer = null;
+    if (paymentMethod === 'Khata') {
+      customer = (this.state.khataCustomers || []).find((c) => String(c.id) === String(opts && opts.customerId));
+      if (!customer) return { ok: false, message: 'Khata sale ke liye pehle customer chunein.' };
+    }
+    // ---- validate every line BEFORE moving anything ----
+    const checked = [];
+    for (const ln of lines) {
+      const qty = Number(ln.qty) || 0;
+      const product = this.productById(ln.productId);
+      if (!product) return { ok: false, message: 'Item nahi mila (id ' + ln.productId + ').' };
+      if (product.type !== 'finished') return { ok: false, message: '"' + (product.name || '') + '" counter par sale nahi ho sakta — sirf tayyar (finished) items bikte hain.' };
+      if (!qty || qty <= 0) return { ok: false, message: '"' + (product.name || '') + '" ki miqdaar durust likhein.' };
+      if (product.price == null || isNaN(Number(product.price))) {
+        return { ok: false, message: '"' + (product.name || '') + '" ka rate nahi hai — pehle is ki price set karein. Sale nahi hui, kuch bhi kata nahi.' };
+      }
+      const avail = this.stockOf(product, locId);
+      if (qty > avail && !(this.state.settings && this.state.settings.allowNegativeStock)) {
+        return { ok: false, message: '"' + (product.name || '') + '" ka itna stock nahi hai — yahan sirf ' + avail + ' ' + (product.unit || '') + ' hai, aap ne ' + qty + ' manga hai. Kuch bhi kata nahi.' };
+      }
+      // FEFO: an expiry-tracked item is picked from its batches,
+      // earliest expiry first; expired batches are never used.
+      let picks = null;
+      if (product.expiryTracked) {
+        const fefo = this.fefoPick(product.id, locId, qty);
+        if (!fefo.ok) return { ok: false, message: fefo.message };
+        picks = fefo.picks;
+      }
+      checked.push({ productId: product.id, name: product.name, unit: product.unit || '',
+        qty, unitPrice: Number(product.price), lineTotal: qty * Number(product.price),
+        availableBefore: avail, picks });
+    }
+    const subtotal = checked.reduce((a, l) => a + l.lineTotal, 0);
+    const discount = Math.max(0, Number((opts && opts.discount) || 0));
+    const deliveryCharges = Math.max(0, Number((opts && opts.deliveryCharges) || 0));
+    let serviceCharge;
+    if (opts && opts.serviceCharge != null) serviceCharge = Math.max(0, Number(opts.serviceCharge) || 0);
+    else {
+      const sc = (this.state.settings || {}).posServiceCharge || { type: 'flat', value: 0 };
+      serviceCharge = sc.type === 'percent' ? subtotal * (Number(sc.value) || 0) / 100 : (Number(sc.value) || 0);
+    }
+    const total = Math.max(0, subtotal - discount + deliveryCharges + serviceCharge);
+    const amountPaid = (opts && opts.amountPaid != null) ? Math.max(0, Number(opts.amountPaid) || 0)
+      : (paymentMethod === 'Khata' ? 0 : total);
+    const orderType = (opts && opts.orderType) || 'takeaway';
+    const tableNo = orderType === 'dine_in' && opts && opts.tableNo != null ? Number(opts.tableNo) : null;
+    const saleNo = ((this.state.sales || []).reduce((m, s) => Math.max(m, Number(s.saleNo) || 0), 0)) + 1;
+    const orderNo = ((this.state.sales || []).filter((s) => String(s.shiftId) === String(shift.id))
+      .reduce((m, s) => Math.max(m, Number(s.orderNo) || 0), 0)) + 1;
+    const id = this.nextId('sales');
+    const billNo = 'SL-' + String(saleNo).padStart(4, '0');
+    const now = (opts && opts.occurredAt) || new Date().toISOString();
+    const recordedBy = (opts && opts.recordedBy) || '';
+    const sale = {
+      id, saleNo, orderType, tableNo, branchId,
+      paymentMethod, customerId: customer ? customer.id : null,
+      subtotal, discount, deliveryCharges, serviceCharge, total, amountPaid,
+      clientRef, shiftId: shift.id, orderNo,
+      cashierId: (opts && opts.cashierId) || null,
+      cashierName: (opts && opts.cashierName) || '',
+      voidedAt: null, voidedBy: null,
+      note: (opts && opts.note) || '', recordedBy, occurredAt: now
+    };
+    this._ensureColl('sales').push(sale);
+    this._noteId('sales', sale.id);
+    checked.forEach((l) => {
+      const lineId = this.nextId('saleLines');
+      this._ensureColl('saleLines').push({
+        id: lineId,
+        saleId: sale.id, itemId: l.productId, quantity: l.qty, unitPrice: l.unitPrice
+      });
+      this._noteId('saleLines', lineId);
+      const product = this.productById(l.productId);
+      this.setStock(product, locId, this.stockOf(product, locId) - l.qty);
+      this.addMovement({ productId: l.productId, productName: l.name, branchId: locId, qty: -l.qty,
+        reason: 'Sale ' + billNo + ' — ' + l.name, user: recordedBy,
+        reference: billNo, clientRef: clientRef ? clientRef + ':line:' + l.productId : null });
+      if (l.picks) this._consumeBatches(l.picks);
+    });
+    return { ok: true, sale, billNo };
+  },
+
+  // One sale with its lines (for the bill / history screens).
+  // Returns { sale, lines: [{...line, name, unit}] } or null.
+  getSaleBill(saleId) {
+    const sale = (this.state.sales || []).find((s) => String(s.id) === String(saleId));
+    if (!sale) return null;
+    const lines = (this.state.saleLines || []).filter((l) => String(l.saleId) === String(sale.id))
+      .map((l) => {
+        const p = this.productById(l.itemId);
+        return Object.assign({}, l, { name: (p && p.name) || 'Item', unit: (p && p.unit) || '' });
+      });
+    return { sale, lines };
+  },
+
+  // Void a sale: the row STAYS (voidedAt/voidedBy stamp), its stock
+  // movements are REMOVED so the stock comes back, and the sale
+  // leaves every total (Summary, Dashboard, Close Shift) and the
+  // khata balance (khata is derived from non-voided sales). A
+  // voided sale cannot be voided twice.
+  // Returns { ok, sale } or { ok: false, message }.
+  voidSale(saleId, user) {
+    const sale = (this.state.sales || []).find((s) => String(s.id) === String(saleId));
+    if (!sale) return { ok: false, message: 'Sale nahi mili.' };
+    if (sale.voidedAt) return { ok: false, message: 'Ye sale pehle se void hai — dobara void nahi ho sakti.' };
+    const billNo = this.saleBillNo(sale);
+    const locId = sale.branchId == null ? this.WAREHOUSE_ID : sale.branchId;
+    const lines = (this.state.saleLines || []).filter((l) => String(l.saleId) === String(sale.id));
+    lines.forEach((l) => {
+      const product = this.productById(l.itemId);
+      if (product) this.setStock(product, locId, this.stockOf(product, locId) + (Number(l.quantity) || 0));
+    });
+    this.state.stockMovements = (this.state.stockMovements || []).filter((m) =>
+      !(m.reference === billNo && String(m.reason || '').indexOf('Sale') === 0));
+    sale.voidedAt = new Date().toISOString();
+    sale.voidedBy = (user && (user.name || user.username)) || '';
+    this.buildIndexes();
+    return { ok: true, sale };
+  },
+
+  // Delete a sale — OWNER ONLY. The row is removed (its lines too),
+  // the stock comes back exactly like a void, and a snapshot lands
+  // in deletedSales so the Summary can still show a true Deleted
+  // count. Returns { ok, deleted: { saleNo, total } } or
+  // { ok: false, message }.
+  deleteSale(saleId, user) {
+    if (!user || user.role !== 'Owner') return { ok: false, message: 'Sirf Owner sale delete kar sakta hai.' };
+    const sale = (this.state.sales || []).find((s) => String(s.id) === String(saleId));
+    if (!sale) return { ok: false, message: 'Sale nahi mili.' };
+    const lines = (this.state.saleLines || []).filter((l) => String(l.saleId) === String(sale.id));
+    if (!sale.voidedAt) {
+      // Stock returns (same as a void); a voided sale's stock is
+      // already back, so this runs only for live sales.
+      const billNo = this.saleBillNo(sale);
+      const locId = sale.branchId == null ? this.WAREHOUSE_ID : sale.branchId;
+      lines.forEach((l) => {
+        const product = this.productById(l.itemId);
+        if (product) this.setStock(product, locId, this.stockOf(product, locId) + (Number(l.quantity) || 0));
+      });
+      this.state.stockMovements = (this.state.stockMovements || []).filter((m) =>
+        !(m.reference === billNo && String(m.reason || '').indexOf('Sale') === 0));
+    }
+    const snapshot = JSON.parse(JSON.stringify({ sale, lines }));
+    const delId = this.nextId('deletedSales');
+    this._ensureColl('deletedSales').push({
+      id: delId,
+      saleNo: sale.saleNo,
+      orderType: sale.orderType,
+      paymentMethod: sale.paymentMethod,
+      total: sale.total,
+      deletedBy: user.name || user.username || '',
+      occurredAt: sale.occurredAt,
+      deletedAt: new Date().toISOString(),
+      snapshotJson: JSON.stringify(snapshot)
+    });
+    this._noteId('deletedSales', delId);
+    this.state.sales = (this.state.sales || []).filter((s) => String(s.id) !== String(sale.id));
+    this.state.saleLines = (this.state.saleLines || []).filter((l) => String(l.saleId) !== String(sale.id));
+    this.buildIndexes();
+    return { ok: true, deleted: { saleNo: sale.saleNo, total: sale.total } };
+  },
+
+  /* ================= v2.1.0 — hold orders & tables ================= */
+  // Park a cart: lines are stored as JSON [{itemId, quantity}] with
+  // NO prices — on resume the cart uses each item's CURRENT price.
+  // Returns { ok, heldOrder } or { ok: false, message }.
+  holdOrder(opts) {
+    const lines = (opts && Array.isArray(opts.lines)) ? opts.lines : [];
+    if (lines.length === 0) return { ok: false, message: 'Pehle cart mein kam az kam aik item add karein.' };
+    for (const ln of lines) {
+      const qty = Number(ln.qty) || 0;
+      if (!this.productById(ln.itemId)) return { ok: false, message: 'Item nahi mila (id ' + ln.itemId + ').' };
+      if (!qty || qty <= 0) return { ok: false, message: 'Miqdaar durust likhein.' };
+    }
+    const held = {
+      id: this.nextId('heldOrders'),
+      orderType: (opts && opts.orderType) || 'takeaway',
+      tableNo: (opts && opts.tableNo) != null ? Number(opts.tableNo) : null,
+      branchId: (opts && opts.branchId != null) ? opts.branchId : null,
+      linesJson: JSON.stringify(lines.map((l) => ({ itemId: l.itemId, quantity: Number(l.qty) || 0 }))),
+      note: (opts && opts.note) || '',
+      recordedBy: (opts && opts.recordedBy) || '',
+      createdAt: new Date().toISOString()
+    };
+    this._ensureColl('heldOrders').push(held);
+    this._noteId('heldOrders', held.id);
+    return { ok: true, heldOrder: held };
+  },
+  // Resume a held order: the cart is rebuilt from CURRENT prices.
+  // Returns { ok, cart } or { ok: false, message }.
+  resumeHoldOrder(heldId) {
+    const held = (this.state.heldOrders || []).find((h) => String(h.id) === String(heldId));
+    if (!held) return { ok: false, message: 'Hold order nahi mila.' };
+    let raw = [];
+    try { raw = JSON.parse(held.linesJson || '[]'); } catch (e) { raw = []; }
+    const lines = raw.map((l) => {
+      const p = this.productById(l.itemId);
+      return { itemId: l.itemId, quantity: l.quantity, name: (p && p.name) || 'Item',
+        unit: (p && p.unit) || '', unitPrice: p ? p.price : null };
+    });
+    return { ok: true, cart: { orderType: held.orderType, tableNo: held.tableNo,
+      branchId: held.branchId, note: held.note, lines } };
+  },
+  deleteHoldOrder(heldId) {
+    const before = (this.state.heldOrders || []).length;
+    this.state.heldOrders = (this.state.heldOrders || []).filter((h) => String(h.id) !== String(heldId));
+    if (this.state.heldOrders.length === before) return { ok: false, message: 'Hold order nahi mila.' };
+    return { ok: true };
+  },
+  // Table state (dine-in tables 1-9): busy when an active held
+  // dine-in order sits on it. Returns { tableNo, busy, since, heldOrderId }.
+  tableStatus(tableNo) {
+    const held = (this.state.heldOrders || []).find((h) =>
+      h.orderType === 'dine_in' && Number(h.tableNo) === Number(tableNo));
+    if (!held) return { tableNo: Number(tableNo), busy: false, since: null, heldOrderId: null };
+    return { tableNo: Number(tableNo), busy: true, since: held.createdAt, heldOrderId: held.id };
+  },
+
+  /* ================= v2.1.0 — khata ================= */
+  // Khata customer: the NAME is required (a customer without a name
+  // is rejected). No uniqueness rule on the web side — none here.
+  addKhataCustomer(opts) {
+    const name = String((opts && opts.name) || '').trim();
+    if (!name) return { ok: false, message: 'Khata customer ka naam zaroori hai — bina naam ke customer nahi ban sakta.' };
+    const customer = {
+      id: this.nextId('khataCustomers'),
+      name,
+      phone: String((opts && opts.phone) || '').trim(),
+      createdAt: new Date().toISOString()
+    };
+    this._ensureColl('khataCustomers').push(customer);
+    this._noteId('khataCustomers', customer.id);
+    return { ok: true, customer };
+  },
+  // Derived balance: sum of the customer's Khata sale totals minus
+  // everything paid (paid at sale time + later payments). Voided
+  // sales are excluded.
+  khataBalance(customerId) {
+    const salesTotal = (this.state.sales || [])
+      .filter((s) => s.paymentMethod === 'Khata' && String(s.customerId) === String(customerId) && !s.voidedAt)
+      .reduce((a, s) => a + ((Number(s.total) || 0) - (Number(s.amountPaid) || 0)), 0);
+    const paid = (this.state.khataPayments || [])
+      .filter((p) => String(p.customerId) === String(customerId))
+      .reduce((a, p) => a + (Number(p.amount) || 0), 0);
+    return salesTotal - paid;
+  },
+  // Ledger: Khata sales and payments for one customer, oldest first.
+  khataLedger(customerId) {
+    const customer = (this.state.khataCustomers || []).find((c) => String(c.id) === String(customerId));
+    if (!customer) return { ok: false, message: 'Khata customer nahi mila.' };
+    const entries = [];
+    (this.state.sales || [])
+      .filter((s) => s.paymentMethod === 'Khata' && String(s.customerId) === String(customerId) && !s.voidedAt)
+      .forEach((s) => entries.push({ type: 'sale', date: s.occurredAt, saleNo: s.saleNo,
+        billNo: this.saleBillNo(s), total: s.total, paid: s.amountPaid }));
+    (this.state.khataPayments || [])
+      .filter((p) => String(p.customerId) === String(customerId))
+      .forEach((p) => entries.push({ type: 'payment', date: p.occurredAt, amount: p.amount,
+        note: p.note || '' }));
+    entries.sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+    return { ok: true, customer, balance: this.khataBalance(customerId), entries };
+  },
+  recordKhataPayment(opts) {
+    const customer = (this.state.khataCustomers || []).find((c) => String(c.id) === String(opts && opts.customerId));
+    if (!customer) return { ok: false, message: 'Khata customer nahi mila.' };
+    const amount = Number(opts && opts.amount) || 0;
+    if (!amount || amount <= 0) return { ok: false, message: 'Payment ki raqam durust likhein (0 se zyada).' };
+    const payment = {
+      id: this.nextId('khataPayments'),
+      customerId: customer.id,
+      amount,
+      note: (opts && opts.note) || '',
+      recordedBy: (opts && opts.recordedBy) || '',
+      occurredAt: (opts && opts.occurredAt) || new Date().toISOString(),
+      createdAt: new Date().toISOString()
+    };
+    this._ensureColl('khataPayments').push(payment);
+    this._noteId('khataPayments', payment.id);
+    return { ok: true, payment, balance: this.khataBalance(customer.id) };
+  },
+
+  /* ================= v2.1.0 — staff ================= */
+  // POS staff (NOT logins — just names for the cashier picker, bills
+  // and reports). Roles: Cashier | Rider | Road Side Waiter | Waiter.
+  addStaff(opts) {
+    const name = String((opts && opts.name) || '').trim();
+    if (!name) return { ok: false, message: 'Staff ka naam zaroori hai.' };
+    const roles = ['Cashier', 'Rider', 'Road Side Waiter', 'Waiter'];
+    const role = (opts && opts.role) || 'Cashier';
+    if (roles.indexOf(role) === -1) return { ok: false, message: 'Staff role durust chunein (Cashier / Rider / Road Side Waiter / Waiter).' };
+    const clientRef = (opts && opts.clientRef) || null;
+    if (clientRef) {
+      const prev = (this.state.staff || []).find((s) => s.clientRef === clientRef);
+      if (prev) return { ok: true, staff: prev, duplicate: true };
+    }
+    const member = {
+      id: this.nextId('staff'),
+      name, role,
+      phone: String((opts && opts.phone) || '').trim(),
+      nic: (opts && opts.nic) || null,
+      imageBlobKey: null,
+      active: 1,
+      clientRef,
+      createdAt: new Date().toISOString()
+    };
+    this._ensureColl('staff').push(member);
+    this._noteId('staff', member.id);
+    return { ok: true, staff: member };
+  },
+  // Soft-remove: bills and closings keep the stamped cashierName, so
+  // history never breaks.
+  deactivateStaff(staffId) {
+    const member = (this.state.staff || []).find((s) => String(s.id) === String(staffId));
+    if (!member) return { ok: false, message: 'Staff nahi mila.' };
+    member.active = 0;
+    return { ok: true, staff: member };
+  },
+  // Daily attendance: one row per staff member per day — re-marking
+  // the same day UPDATES the same row (never a duplicate row).
+  markAttendance(opts) {
+    const member = (this.state.staff || []).find((s) => String(s.id) === String(opts && opts.staffId));
+    if (!member) return { ok: false, message: 'Staff nahi mila.' };
+    const day = (opts && opts.day) || this._todayLocal();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return { ok: false, message: 'Din durust likhein (YYYY-MM-DD).' };
+    const status = (opts && opts.status) || 'present';
+    if (status !== 'present' && status !== 'absent') return { ok: false, message: 'Attendance present ya absent hoti hai.' };
+    const rows = this._ensureColl('staffAttendance');
+    const existing = rows.find((r) => String(r.staffId) === String(member.id) && r.day === day);
+    if (existing) {
+      existing.status = status;
+      existing.updatedAt = new Date().toISOString();
+      return { ok: true, attendance: existing, updated: true };
+    }
+    const row = { id: this.nextId('staffAttendance'), staffId: member.id, day, status,
+      recordedBy: (opts && opts.recordedBy) || '', createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString() };
+    rows.push(row);
+    this._noteId('staffAttendance', row.id);
+    return { ok: true, attendance: row };
+  },
+
+  /* ================= v2.1.0 — recipes ================= */
+  // Saved production recipe: a finish item + its raw lines.
+  // completeProduction can take recipeId instead of ad-hoc lines.
+  saveRecipe(opts) {
+    const finish = this.productById(opts && opts.finishProductId);
+    if (!finish) return { ok: false, message: 'Finish item nahi mila.' };
+    if (finish.type !== 'finished') return { ok: false, message: '"' + (finish.name || '') + '" finish item nahi hai — recipe sirf Finish Goods ke liye hai.' };
+    const lines = (opts && Array.isArray(opts.lines)) ? opts.lines : [];
+    if (lines.length === 0) return { ok: false, message: 'Recipe mein kam az kam aik raw item chahiye.' };
+    for (const ln of lines) {
+      const raw = this.productById(ln.productId);
+      if (!raw) return { ok: false, message: 'Raw item nahi mila (id ' + ln.productId + ').' };
+      if (raw.type !== 'raw') return { ok: false, message: '"' + (raw.name || '') + '" raw item nahi hai.' };
+      if (!(Number(ln.qty) > 0)) return { ok: false, message: '"' + (raw.name || '') + '" ki miqdaar durust likhein.' };
+    }
+    const recipe = {
+      id: this.nextId('recipes'),
+      finishProductId: finish.id,
+      name: String((opts && opts.name) || '').trim() || (finish.name + ' Recipe'),
+      lines: lines.map((l) => ({ productId: l.productId, qty: Number(l.qty) })),
+      createdBy: (opts && opts.createdBy) || '',
+      createdAt: new Date().toISOString()
+    };
+    this._ensureColl('recipes').push(recipe);
+    this._noteId('recipes', recipe.id);
+    return { ok: true, recipe };
+  },
+  listRecipes(finishProductId) {
+    const all = this.state.recipes || [];
+    if (finishProductId == null) return all.slice();
+    return all.filter((r) => String(r.finishProductId) === String(finishProductId));
+  },
+  deleteRecipe(recipeId) {
+    const before = (this.state.recipes || []).length;
+    this.state.recipes = (this.state.recipes || []).filter((r) => String(r.id) !== String(recipeId));
+    if (this.state.recipes.length === before) return { ok: false, message: 'Recipe nahi mili.' };
+    return { ok: true };
+  },
+
+  /* ================= v2.1.0 — expiry batches (FEFO) & wastage ================= */
+  // A stock batch for an expiry-tracked item (created on purchase).
+  // expiryDate is YYYY-MM-DD and required for tracked items.
+  addBatch(opts) {
+    const product = this.productById(opts && opts.productId);
+    if (!product) return { ok: false, message: 'Item nahi mila.' };
+    const qty = Number(opts && opts.qty) || 0;
+    if (!qty || qty <= 0) return { ok: false, message: 'Batch ki miqdaar durust likhein (0 se zyada).' };
+    const expiryDate = String((opts && opts.expiryDate) || '').slice(0, 10);
+    if (product.expiryTracked && !/^\d{4}-\d{2}-\d{2}$/.test(expiryDate)) {
+      return { ok: false, message: 'Expiry-tracked item ke liye expiry date zaroori hai (YYYY-MM-DD).' };
+    }
+    const batch = {
+      id: this.nextId('batches'),
+      productId: product.id,
+      qty,
+      expiryDate: expiryDate || null,
+      purchaseId: (opts && opts.purchaseId) || null,
+      branchId: (opts && opts.branchId != null) ? opts.branchId : this.WAREHOUSE_ID,
+      createdAt: new Date().toISOString()
+    };
+    this._ensureColl('batches').push(batch);
+    this._noteId('batches', batch.id);
+    return { ok: true, batch };
+  },
+  // FEFO pick: take `qty` from this product's batches at one
+  // location, earliest expiry first. EXPIRED batches (expiryDate
+  // before today) are never picked — if the non-expired stock is
+  // short, the whole pick is rejected (nothing is consumed).
+  // Returns { ok, picks: [{batchId, qty}], totalAvailable } or
+  // { ok: false, message }.
+  fefoPick(productId, branchId, qty) {
+    const need = Number(qty) || 0;
+    if (!need || need <= 0) return { ok: false, message: 'Miqdaar durust likhein.' };
+    const today = this._todayLocal();
+    const batches = (this.state.batches || [])
+      .filter((b) => String(b.productId) === String(productId) &&
+        String(b.branchId) === String(branchId == null ? this.WAREHOUSE_ID : branchId) &&
+        (Number(b.qty) || 0) > 0)
+      .sort((a, b) => String(a.expiryDate || '9999-12-31').localeCompare(String(b.expiryDate || '9999-12-31')));
+    const usable = batches.filter((b) => !b.expiryDate || String(b.expiryDate) >= today);
+    const available = usable.reduce((a, b) => a + (Number(b.qty) || 0), 0);
+    if (available < need) {
+      const product = this.productById(productId);
+      return { ok: false, message: '"' + ((product && product.name) || 'Item') + '" ki fresh (non-expired) stock sirf ' + available + ' hai, aap ne ' + need + ' manga hai — expired batch se dispatch nahi ho sakta. Kuch bhi kata nahi.' };
+    }
+    const picks = [];
+    let left = need;
+    for (const b of usable) {
+      if (left <= 0) break;
+      const take = Math.min(Number(b.qty) || 0, left);
+      picks.push({ batchId: b.id, qty: take });
+      left -= take;
+    }
+    return { ok: true, picks, totalAvailable: available };
+  },
+  // Apply FEFO picks (decrement batch quantities). Internal — called
+  // by createSale after the stock move succeeds.
+  _consumeBatches(picks) {
+    (picks || []).forEach((p) => {
+      const b = (this.state.batches || []).find((x) => String(x.id) === String(p.batchId));
+      if (b) b.qty = Math.max(0, (Number(b.qty) || 0) - (Number(p.qty) || 0));
+    });
+  },
+  // Wastage: stock goes down, a movement with reason 'Wastage …'
+  // is recorded (isSaleMovement counts it as NOT a sale).
+  recordWastage(opts) {
+    const product = this.productById(opts && opts.productId);
+    if (!product) return { ok: false, message: 'Item nahi mila.' };
+    const qty = Number(opts && opts.qty) || 0;
+    if (!qty || qty <= 0) return { ok: false, message: 'Wastage ki miqdaar durust likhein (0 se zyada).' };
+    const branchId = (opts && opts.branchId != null) ? opts.branchId : this.WAREHOUSE_ID;
+    const avail = this.stockOf(product, branchId);
+    if (qty > avail && !(this.state.settings && this.state.settings.allowNegativeStock)) {
+      return { ok: false, message: '"' + (product.name || '') + '" ka itna stock nahi hai — yahan sirf ' + avail + ' hai.' };
+    }
+    const row = {
+      id: this.nextId('wastage'),
+      productId: product.id,
+      qty,
+      reason: String((opts && opts.reason) || '').trim() || 'Wastage',
+      branchId,
+      recordedBy: (opts && opts.recordedBy) || '',
+      occurredAt: (opts && opts.occurredAt) || new Date().toISOString()
+    };
+    this._ensureColl('wastage').push(row);
+    this._noteId('wastage', row.id);
+    this.setStock(product, branchId, this.stockOf(product, branchId) - qty);
+    this.addMovement({ productId: product.id, productName: product.name, branchId,
+      qty: -qty, reason: 'Wastage — ' + row.reason, user: row.recordedBy, reference: '' });
+    return { ok: true, wastage: row };
+  },
+
+  /* ================= v2.1.0 — suppliers & godown expenses ================= */
+  // Supplier add (duplicate NAME is rejected — the same rule the
+  // purchase screen's auto-create uses).
+  addSupplier(opts) {
+    const name = String((opts && opts.name) || '').trim();
+    if (!name) return { ok: false, message: 'Supplier ka naam zaroori hai.' };
+    const uniq = this.checkUniqueness('suppliers', { name }, null);
+    if (!uniq.ok) return uniq;
+    const supplier = {
+      id: this.nextId('suppliers'),
+      name,
+      phone: String((opts && opts.phone) || '').trim(),
+      address: String((opts && opts.address) || '').trim(),
+      createdAt: new Date().toISOString()
+    };
+    this._ensureColl('suppliers').push(supplier);
+    this._noteId('suppliers', supplier.id);
+    this.buildIndexes();
+    return { ok: true, supplier };
+  },
+  supplierPurchases(supplierId) {
+    return (this.state.purchases || []).filter((p) => String(p.supplierId) === String(supplierId));
+  },
+  // Godown expense (separate from shift expenses).
+  addExpense(opts) {
+    const head = String((opts && opts.head) || '').trim();
+    if (!head) return { ok: false, message: 'Kharch ka head zaroori hai.' };
+    const amount = Number(opts && opts.amount) || 0;
+    if (!amount || amount <= 0) return { ok: false, message: 'Raqam durust likhein (0 se zyada).' };
+    const expense = {
+      id: this.nextId('expenses'),
+      head, amount,
+      note: String((opts && opts.note) || '').trim(),
+      recordedBy: (opts && opts.recordedBy) || '',
+      occurredAt: (opts && opts.occurredAt) || new Date().toISOString()
+    };
+    this._ensureColl('expenses').push(expense);
+    this._noteId('expenses', expense.id);
+    return { ok: true, expense };
+  },
+
+  /* ================= v2.1.0 — range queries, summary, dashboards ================= */
+  // Non-voided sales in [from, to] (local YYYY-MM-DD, inclusive).
+  // branchId: undefined = all locations; null = warehouse counter
+  // only; a number = that branch only. opts.includeVoided=true
+  // keeps voided sales in (default: excluded).
+  salesInRange(fromISO, toISO, branchId, opts) {
+    const includeVoided = !!(opts && opts.includeVoided);
+    const from = fromISO ? String(fromISO).slice(0, 10) : null;
+    const to = toISO ? String(toISO).slice(0, 10) : null;
+    return (this.state.sales || []).filter((s) => {
+      if (!includeVoided && s.voidedAt) return false;
+      const d = this._dayOf(s.occurredAt);
+      if (!d) return false;
+      if (from && d < from) return false;
+      if (to && d > to) return false;
+      if (branchId === undefined) return true;
+      if (branchId === null) return s.branchId == null;
+      return String(s.branchId) === String(branchId);
+    }).slice().sort((a, b) => String(a.occurredAt || '').localeCompare(String(b.occurredAt || '')));
+  },
+  // Transfers (dispatches) in [from, to], each with its computed
+  // values (transferBillValues: stamped value, cost, margin).
+  // Returns [{ transfer, values }].
+  dispatchesInRange(fromISO, toISO) {
+    const from = fromISO ? String(fromISO).slice(0, 10) : null;
+    const to = toISO ? String(toISO).slice(0, 10) : null;
+    return (this.state.transfers || []).filter((t) => {
+      const d = this._dayOf(t.date);
+      if (!d) return false;
+      if (from && d < from) return false;
+      if (to && d > to) return false;
+      return true;
+    }).slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')))
+      .map((t) => ({ transfer: t, values: this.transferBillValues(t, this.state.products) }));
+  },
+  // Sales Summary (web getSalesSummary): totals for a date range
+  // and/or one shift. byPayment / byOrderType are sums of sale
+  // totals; serviceCharge is the summed service charge; tax is
+  // ALWAYS 0 (there is no tax system in this app). Voided sales
+  // are excluded from every total and counted separately; deleted
+  // sales are counted from the deletedSales log.
+  getSalesSummary(opts) {
+    const from = opts && opts.from ? String(opts.from).slice(0, 10) : null;
+    const to = opts && opts.to ? String(opts.to).slice(0, 10) : null;
+    let sales = this.salesInRange(from, to);
+    if (opts && opts.shiftId != null) sales = sales.filter((s) => String(s.shiftId) === String(opts.shiftId));
+    const voided = (this.state.sales || []).filter((s) => {
+      if (!s.voidedAt) return false;
+      const d = this._dayOf(s.occurredAt);
+      if (from && d < from) return false;
+      if (to && d > to) return false;
+      if (opts && opts.shiftId != null && String(s.shiftId) !== String(opts.shiftId)) return false;
+      return true;
+    });
+    const deleted = (this.state.deletedSales || []).filter((d) => {
+      const day = this._dayOf(d.deletedAt);
+      if (from && day < from) return false;
+      if (to && day > to) return false;
+      return true;
+    });
+    const byPayment = {}, byOrderType = {};
+    let totalSales = 0, serviceCharge = 0;
+    sales.forEach((s) => {
+      const t = Number(s.total) || 0;
+      totalSales += t;
+      serviceCharge += Number(s.serviceCharge) || 0;
+      byPayment[s.paymentMethod] = (byPayment[s.paymentMethod] || 0) + t;
+      byOrderType[s.orderType] = (byOrderType[s.orderType] || 0) + t;
+    });
+    return {
+      from, to, shiftId: (opts && opts.shiftId) || null,
+      totalSales, bills: sales.length,
+      byPayment, byOrderType, serviceCharge,
+      tax: 0,
+      voidCount: voided.length,
+      voidedTotal: voided.reduce((a, s) => a + (Number(s.total) || 0), 0),
+      deletedCount: deleted.length,
+      deletedTotal: deleted.reduce((a, d) => a + (Number(d.total) || 0), 0)
+    };
+  },
+  // POS Dashboard (web getPosDashboard): one day's sales — totals
+  // and the bill list. Cost/profit are deliberately NOT here (the
+  // web POS dashboard does not show them either).
+  getPosDashboard(opts) {
+    const date = (opts && opts.date) || this._todayLocal();
+    const sales = this.salesInRange(date, date);
+    const byPayment = {}, byOrderType = {};
+    let totalSales = 0, serviceCharge = 0;
+    sales.forEach((s) => {
+      const t = Number(s.total) || 0;
+      totalSales += t;
+      serviceCharge += Number(s.serviceCharge) || 0;
+      byPayment[s.paymentMethod] = (byPayment[s.paymentMethod] || 0) + t;
+      byOrderType[s.orderType] = (byOrderType[s.orderType] || 0) + t;
+    });
+    return {
+      date, totalSales, bills: sales.length, byPayment, byOrderType, serviceCharge,
+      sales: sales.map((s) => ({ id: s.id, saleNo: s.saleNo, billNo: this.saleBillNo(s),
+        total: s.total, paymentMethod: s.paymentMethod, orderType: s.orderType,
+        tableNo: s.tableNo, time: s.occurredAt, cashierName: s.cashierName || '' }))
+    };
+  },
+  // Owner Dashboard (web getOwnerDashboard, local compute): counter
+  // sales and warehouse dispatch are computed from their own
+  // separate sources and NEVER mixed. Any cost or profit is null
+  // whenever an involved item has no purchase price set — figures
+  // are never estimated (a null line makes its branch total and
+  // the grand total null too).
+  // opts: { from, to } or { range: 'today'|'yesterday'|'thisWeek'|'thisMonth' }.
+  // Returns { from, to, totals, branches, bills, dispatchTotals,
+  // dispatchBranches, dispatches }.
+  getOwnerDashboard(opts) {
+    let from, to;
+    if (opts && opts.range) { const r = this.dateRangeFor(opts.range); from = r.from; to = r.to; }
+    else {
+      from = opts && opts.from ? String(opts.from).slice(0, 10) : this._todayLocal();
+      to = opts && opts.to ? String(opts.to).slice(0, 10) : from;
+    }
+    const branchNameOf = (id) => {
+      if (id == null) return 'Warehouse Counter';
+      const b = this.branchById(id);
+      return (b && b.name) || ('Branch ' + id);
+    };
+    // ---- Counter sales ----
+    const sales = this.salesInRange(from, to);
+    const saleIds = new Set(sales.map((s) => s.id));
+    const linesBySale = {};
+    (this.state.saleLines || []).forEach((l) => {
+      if (!saleIds.has(l.saleId)) return;
+      (linesBySale[l.saleId] = linesBySale[l.saleId] || []).push(l);
+    });
+    const lineCost = (l) => {
+      const p = this.productById(l.itemId);
+      const pp = (p && p.purchasePrice != null && !isNaN(Number(p.purchasePrice))) ? Number(p.purchasePrice) : null;
+      const qty = Number(l.quantity) || 0;
+      const unitPrice = Number(l.unitPrice) || 0;
+      return { costPrice: pp, lineCost: pp == null ? null : qty * pp,
+        lineTotal: qty * unitPrice, lineProfit: pp == null ? null : (qty * unitPrice - qty * pp) };
+    };
+    let totalSales = 0, costSum = 0, allCostKnown = true, productsSold = 0;
+    const branchAcc = {};
+    const accFor = (branchId) => {
+      const key = branchId == null ? 'counter' : 'b' + branchId;
+      if (!branchAcc[key]) branchAcc[key] = { branchId, branchName: branchNameOf(branchId),
+        bills: 0, totalSales: 0, cost: 0, costKnown: true, productsSold: 0 };
+      return branchAcc[key];
+    };
+    const bills = sales.map((s) => {
+      const acc = accFor(s.branchId);
+      acc.bills += 1;
+      acc.totalSales += Number(s.total) || 0;
+      totalSales += Number(s.total) || 0;
+      const lines = (linesBySale[s.id] || []).map((l) => {
+        const p = this.productById(l.itemId);
+        const c = lineCost(l);
+        const qty = Number(l.quantity) || 0;
+        productsSold += qty;
+        acc.productsSold += qty;
+        if (c.lineCost == null) { allCostKnown = false; acc.costKnown = false; }
+        else { costSum += c.lineCost; acc.cost += c.lineCost; }
+        return { productId: l.itemId, name: (p && p.name) || 'Item', unit: (p && p.unit) || '',
+          qty, unitPrice: Number(l.unitPrice) || 0, lineTotal: c.lineTotal,
+          costPrice: c.costPrice, lineCost: c.lineCost, lineProfit: c.lineProfit };
+      });
+      return { id: s.id, saleNo: s.saleNo, billNo: this.saleBillNo(s),
+        branchId: s.branchId, branchName: branchNameOf(s.branchId),
+        date: s.occurredAt, orderType: s.orderType, paymentMethod: s.paymentMethod,
+        subtotal: s.subtotal, discount: s.discount, deliveryCharges: s.deliveryCharges,
+        serviceCharge: s.serviceCharge, total: s.total, lines };
+    });
+    const branches = Object.values(branchAcc).map((a) => ({
+      branchId: a.branchId, branchName: a.branchName, bills: a.bills,
+      totalSales: a.totalSales, productsSold: a.productsSold,
+      cost: a.costKnown ? a.cost : null,
+      profit: a.costKnown ? (a.totalSales - a.cost) : null
+    }));
+    const cost = allCostKnown ? costSum : null;
+    // ---- Warehouse dispatch (SB transfers) — separate source ----
+    const dispatchesRaw = this.dispatchesInRange(from, to);
+    let dispatchQty = 0, dispatchValue = 0, dispatchCost = 0, dispatchMargin = 0;
+    let valueKnown = true, costKnown = true, marginKnown = true;
+    const dispatchBranchAcc = {};
+    const dispatches = dispatchesRaw.map(({ transfer, values }) => {
+      dispatchQty += values.totals.qty;
+      if (values.totals.valueKnown) dispatchValue += values.totals.value; else valueKnown = false;
+      if (values.totals.costKnown) dispatchCost += values.totals.cost; else costKnown = false;
+      if (values.totals.marginKnown) dispatchMargin += values.totals.margin; else marginKnown = false;
+      const key = transfer.toBranchId == null ? 'counter' : 'b' + transfer.toBranchId;
+      if (!dispatchBranchAcc[key]) dispatchBranchAcc[key] = { branchId: transfer.toBranchId,
+        branchName: branchNameOf(transfer.toBranchId), dispatches: 0, qty: 0,
+        value: 0, valueKnown: true, cost: 0, costKnown: true, margin: 0, marginKnown: true };
+      const da = dispatchBranchAcc[key];
+      da.dispatches += 1;
+      da.qty += values.totals.qty;
+      if (values.totals.valueKnown) da.value += values.totals.value; else da.valueKnown = false;
+      if (values.totals.costKnown) da.cost += values.totals.cost; else da.costKnown = false;
+      if (values.totals.marginKnown) da.margin += values.totals.margin; else da.marginKnown = false;
+      return { id: transfer.id, billNo: transfer.billNo || ('SB-' + String(transfer.id).padStart(4, '0')),
+        date: transfer.date, fromBranchId: transfer.fromBranchId, toBranchId: transfer.toBranchId,
+        toBranchName: branchNameOf(transfer.toBranchId),
+        items: values.rows, value: values.totals.valueKnown ? values.totals.value : null,
+        cost: values.totals.costKnown ? values.totals.cost : null,
+        margin: values.totals.marginKnown ? values.totals.margin : null };
+    });
+    const dispatchBranches = Object.values(dispatchBranchAcc).map((a) => ({
+      branchId: a.branchId, branchName: a.branchName, dispatches: a.dispatches, qty: a.qty,
+      value: a.valueKnown ? a.value : null,
+      cost: a.costKnown ? a.cost : null,
+      margin: a.marginKnown ? a.margin : null
+    }));
+    return {
+      from, to,
+      totals: { totalSales, bills: sales.length, productsSold,
+        cost, profit: cost == null ? null : (totalSales - cost),
+        totalStockTransferred: dispatchQty,
+        totalDispatchValue: valueKnown ? dispatchValue : null,
+        totalDispatchCost: costKnown ? dispatchCost : null,
+        totalDispatchMargin: marginKnown ? dispatchMargin : null },
+      branches, bills,
+      dispatchTotals: { dispatches: dispatches.length, qty: dispatchQty,
+        value: valueKnown ? dispatchValue : null,
+        cost: costKnown ? dispatchCost : null,
+        margin: marginKnown ? dispatchMargin : null },
+      dispatchBranches, dispatches
+    };
+  },
+
+  /* ================= v2.1.0 — backup export / validate / import ================= */
+  // Wrapped export format (v2): { app, version, exportedAt, data }.
+  // The on-disk data file and backupOnClose keep writing the raw
+  // state; this wrapper is what Settings "Backup download" writes,
+  // and what validateBackup/importBackup understand.
+  exportBackup() {
+    return {
+      app: 'sahara-bakers-backup',
+      version: 2,
+      exportedAt: new Date().toISOString(),
+      data: this.state
+    };
+  },
+  // Validate a parsed backup BEFORE anything is replaced.
+  // Accepts BOTH the new wrapper format and the legacy raw desktop
+  // state (accept-with-warning). REJECTS web-format backups (their
+  // schema uses items/users, not products/appUsers) with a clear
+  // message. Returns { ok, warning, data, isWrapper } or
+  // { ok: false, message } (Roman Urdu). Never touches state.
+  validateBackup(parsed) {
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return { ok: false, message: 'Backup file durust nahi hai — file khaali ya ghalat format hai. Current data waisa hi hai.' };
+    }
+    const isWrapper = parsed.app != null || parsed.data != null;
+    let data = parsed;
+    let warning = null;
+    // Web-format backup: the web export puts its tables at the TOP
+    // level (items/users/movements) instead of products/appUsers/
+    // stockMovements, and has no `data` wrapper. Never import it
+    // into the desktop store — the schema is different.
+    if (Array.isArray(parsed.items) || Array.isArray(parsed.users)) {
+      return { ok: false, message: 'Ye WEB app ka backup hai — desktop mein web backup restore nahi ho sakta (schema alag hai: items/users ke bajaye products/appUsers chahiye). Current data waisa hi hai.' };
+    }
+    if (isWrapper) {
+      if (parsed.app !== 'sahara-bakers-backup') {
+        return { ok: false, message: 'Ye backup Sahara Bakers ka nahi hai (app: ' + String(parsed.app || '—') + '). Restore nahi hua, current data waisa hi hai.' };
+      }
+      if (parsed.version != null && [1, 2].indexOf(Number(parsed.version)) === -1) {
+        return { ok: false, message: 'Backup version ' + parsed.version + ' support nahi hai (sirf version 1 aur 2). Restore nahi hua, current data waisa hi hai.' };
+      }
+      if (!parsed.data || typeof parsed.data !== 'object' || Array.isArray(parsed.data)) {
+        return { ok: false, message: 'Backup file mein data nahi mila. Restore nahi hua, current data waisa hi hai.' };
+      }
+      data = parsed.data;
+    }
+    // Web-format backup nested under a wrapper: same different
+    // schema (items/users/movements instead of
+    // products/appUsers/stockMovements). Never import it.
+    if (Array.isArray(data.items) || Array.isArray(data.users)) {
+      return { ok: false, message: 'Ye WEB app ka backup hai — desktop mein web backup restore nahi ho sakta (schema alag hai: items/users ke bajaye products/appUsers chahiye). Current data waisa hi hai.' };
+    }
+    if (!isWrapper) {
+      warning = 'Purana backup format hai (bina app/version ke) — checks pass honay par restore kiya ja raha hai.';
+    }
+    const required = ['products', 'branches', 'appUsers', 'stockMovements', 'transfers', 'productions', 'purchases'];
+    for (const t of required) {
+      if (!Array.isArray(data[t])) {
+        return { ok: false, message: 'Backup mein zaroori table nahi hai: ' + t + '. Restore nahi hua, current data waisa hi hai.' };
+      }
+    }
+    const owners = (data.appUsers || []).filter((u) => u.role === 'Owner' && u.isActive !== false);
+    if (owners.length === 0) {
+      return { ok: false, message: 'Backup mein koi active Owner login nahi hai — restore nahi ho sakta. Current data waisa hi hai.' };
+    }
+    // Empty-backup guard: a backup with no items at all must never
+    // overwrite a store that has items, and a fully empty backup
+    // must never overwrite a store that has any data.
+    const cur = this.state;
+    const curHasData = (cur.products || []).length > 0 || (cur.appUsers || []).length > 0 ||
+      (cur.stockMovements || []).length > 0 || (cur.sales || []).length > 0 || (cur.branches || []).length > 0;
+    const bakEmpty = (data.products || []).length === 0 && (data.appUsers || []).length === 0 &&
+      (data.stockMovements || []).length === 0 && ((data.sales || []).length === 0) && (data.branches || []).length === 0;
+    if (bakEmpty && curHasData) {
+      return { ok: false, message: 'Backup khaali hai (koi item, login ya movement nahi) jabke current data mojood hai — khaali backup se data overwrite nahi hoga.' };
+    }
+    if ((data.products || []).length === 0 && (cur.products || []).length > 0) {
+      return { ok: false, message: 'Backup mein koi item nahi hai jabke current data mein items hain — restore nahi ho sakta. Current data waisa hi hai.' };
+    }
+    return { ok: true, warning, data, isWrapper };
+  },
+  // Validate-then-replace import. `input` is a parsed object or a
+  // JSON string. A safety backup of the CURRENT state is taken
+  // before anything is replaced. On any failure the current data
+  // is untouched. Returns { ok, warning, products, logins, sales,
+  // transfers } or { ok: false, message }.
+  importBackup(input) {
+    let parsed = input;
+    if (typeof input === 'string') {
+      try { parsed = JSON.parse(input); }
+      catch (e) {
+        return { ok: false, message: 'Backup file durust nahi hai (JSON nahi). Restore nahi hua, current data waisa hi hai.' };
+      }
+    }
+    const v = this.validateBackup(parsed);
+    if (!v.ok) return v;
+    try { this.backup(); } catch (e) { /* safety backup is best-effort */ }
+    this.state = Object.assign(emptyState(), v.data);
+    const NEW_TABLES = ['sales', 'saleLines', 'heldOrders', 'khataCustomers', 'khataPayments',
+      'shifts', 'staff', 'staffAttendance', 'shiftExpenses', 'deletedSales',
+      'batches', 'wastage', 'expenses', 'recipes'];
+    NEW_TABLES.forEach((t) => { if (!Array.isArray(this.state[t])) this.state[t] = []; });
+    if (!this.state.settings) this.state.settings = {};
+    const s = this.state.settings;
+    if (s.managerCanSeeCost == null) s.managerCanSeeCost = false;
+    if (s.posServiceCharge == null) s.posServiceCharge = { type: 'flat', value: 0 };
+    if (s.posBillCopies == null) s.posBillCopies = 1;
+    if (s.kotEnabled == null) s.kotEnabled = true;
+    if (s.kotRemarks == null) s.kotRemarks = true;
+    if (s.backupFormatVersion == null) s.backupFormatVersion = 2;
+    if (s.sessionTimeoutMinutes == null) s.sessionTimeoutMinutes = 15;
+    if (s.lowStockNotifications == null) s.lowStockNotifications = true;
+    if (s.defaultLowStockLimit == null) s.defaultLowStockLimit = null;
+    if (!s.currency) s.currency = 'PKR';
+    this.buildIndexes();
+    try { this.save(); }
+    catch (e) {
+      return { ok: false, message: 'Restore save nahi ho saka: ' + (e && e.message ? e.message : 'unknown error') };
+    }
+    return { ok: true, warning: v.warning || null,
+      products: (this.state.products || []).length,
+      logins: (this.state.appUsers || []).length,
+      sales: (this.state.sales || []).length,
+      transfers: (this.state.transfers || []).length };
   }
 };
 

@@ -29,6 +29,14 @@ function renderTransfer(container) {
   const wrap = el('<div></div>');
   wrap.appendChild(el('<div class="screen-head"><h1>Stock Transfer</h1></div>'));
 
+  // v2.1.0 — Owner read-only gate: Owner transfer create nahi kar
+  // sakta (frozen DB bhi reject karta hai) — create form chhupa di
+  // jati hai; list + bill detail neeche read-only rehte hain.
+  const isOwner = !!(window.App.user && window.App.user.role === 'Owner');
+  if (isOwner) {
+    wrap.appendChild(el('<div class="card"><h2>Stock Transfer — Read-Only</h2><p class="muted">Transfer sirf Warehouse Manager karta hai — aap sirf dekh sakte hain. Neeche transfer history aur bills dekh sakte hain.</p></div>'));
+  }
+
   const tCard = el('<div class="card"><h2>Branch Transfer — Warehouse se Branch</h2></div>');
   const tForm = el('<form></form>');
   // The source is LOCKED to the Warehouse (DB.WAREHOUSE_ID): there is
@@ -95,6 +103,17 @@ function renderTransfer(container) {
     if (String(fromId) === String(toId)) { notify('Issue — From aur To branch aik hi nahi ho sakte', 'error'); return; }
     if (stage.length === 0) { notify('Issue — Pehle kam az kam aik item add karein', 'error'); return; }
     // Stock check first — nothing moves until every line is available.
+    // v2.1.0 — FEFO: expiry-tracked lines pick earliest-expiry first;
+    // expired batches are never used. DB.fefoPick rejects (nothing
+    // moves) when fresh stock is short — show its message as-is.
+    const fefoPicks = [];
+    for (const it of stage) {
+      const p = products.find((x) => String(x.id) === String(it.productId));
+      if (!p || !p.expiryTracked) continue;
+      const fefo = DB.fefoPick(p.id, fromId, it.qty);
+      if (!fefo.ok) { notify('Issue — ' + fefo.message, 'error'); return; }
+      fefoPicks.push(...fefo.picks);
+    }
     for (const it of stage) {
       const p = products.find((x) => String(x.id) === String(it.productId));
       if (!p) continue;
@@ -108,7 +127,13 @@ function renderTransfer(container) {
       date: new Date().toISOString(),
       fromBranchId: fromId,
       toBranchId: toId,
-      items: stage.map((it) => ({ productId: it.productId, qty: it.qty })),
+      // v2.1.0 — line unitPrice stamp: har line ki supply value
+      // transfer waqt ki CURRENT price se stamp hoti hai (price
+      // blank ho to null) — dispatch cost/margin isi se banta hai.
+      items: stage.map((it) => {
+        const p = products.find((x) => String(x.id) === String(it.productId));
+        return { productId: it.productId, qty: it.qty, unitPrice: (p && p.price != null) ? Number(p.price) : null };
+      }),
       status: 'sent',
       createdBy: window.App.user ? window.App.user.name : '',
       receivedBy: receivedIn.value.trim(),
@@ -122,6 +147,9 @@ function renderTransfer(container) {
       window.App.adjustStock(p, fromId, -it.qty, 'Transfer — ' + window.App.branchName(toId), billNo, legRef + ':out');
       window.App.adjustStock(p, toId, it.qty, 'Transfer — ' + window.App.branchName(fromId) + ' se aaya', billNo, legRef + ':in');
     });
+    // v2.1.0 — FEFO consume: decrement the picked batches now that the
+    // stock has moved. (Coordinator-blessed: DB._consumeBatches.)
+    if (DB._consumeBatches) DB._consumeBatches(fefoPicks);
     S().transfers.unshift(transfer);
     window.App.save();
     stage.length = 0;
@@ -131,7 +159,8 @@ function renderTransfer(container) {
     if (window.App.showTransferBill) window.App.showTransferBill(transfer);
   });
   tCard.appendChild(tForm);
-  wrap.appendChild(tCard);
+  // v2.1.0 — Owner read-only: create form sirf non-Owner ko dikhe.
+  if (!isOwner) wrap.appendChild(tCard);
 
   // ---- Transfer History (re-print from here too) ----
   const transfers = (st.transfers || []).slice().sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));

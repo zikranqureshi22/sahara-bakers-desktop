@@ -113,11 +113,20 @@ function sanitiseErrorMessage(e) {
 // warehouse, transfer, branches, stock in/out, stock.
 // Branch: own branch stock + items view only.
 const OWNER_ONLY = ['reports', 'logins', 'settings'];
+// v2.1.0 — POS routes (Counter Manager only) + godown Owner screens.
+// Route ids match window.Screens registrations: 'sale' (pos.js),
+// 'sales-history', 'shifts', 'sales-summary', 'pos-dashboard',
+// 'pos-settings', 'staff', 'recipes', 'owner-dashboard', 'expiry',
+// 'suppliers', 'expenses'. kot.js / sale-bill.js have NO screen
+// (helpers only) and items.js is already reachable — no nav for them.
+const POS_ROUTES = ['sale', 'sales-history', 'shifts', 'sales-summary', 'pos-dashboard', 'khata', 'pos-settings', 'staff'];
 const NAV = [
+  { id: 'owner-dashboard', label: 'Owner Dashboard', sub: 'Sales aur dispatch', action: 'owner-dashboard', section: 'main' },
   { id: 'dashboard', label: 'Dashboard', sub: 'Aaj ka hisaab', action: 'dashboard', section: 'main' },
   { id: 'products', label: 'Products', sub: 'Sab items', action: 'products', section: 'main' },
   { id: 'raw', label: 'Raw Material', sub: 'Kacha maal', action: 'raw', section: 'main' },
   { id: 'production', label: 'Production', sub: 'Tayyar karna', action: 'production', section: 'main' },
+  { id: 'recipes', label: 'Recipes', sub: 'Production recipes', action: 'recipes', section: 'main' },
   { id: 'finished', label: 'Finish Goods', sub: 'Tayyar cheezein', action: 'finished', section: 'main' },
   { id: 'warehouse', label: 'Warehouse', sub: 'Godown', action: 'warehouse', section: 'main' },
   { id: 'transfer', label: 'Stock Transfer', sub: 'Branch ko bhejo', action: 'transfer', section: 'main' },
@@ -125,6 +134,17 @@ const NAV = [
   { id: 'billing', label: 'Billing', sub: 'Bill aur invoices', action: 'billing', section: 'main' },
   { id: 'stockio', label: 'Stock In/Out', sub: 'Maal aaya / gaya', action: 'stockio', section: 'main' },
   { id: 'stock', label: 'Stock', sub: 'Stock dekho', action: 'stock', section: 'main' },
+  { id: 'expiry', label: 'Expiry & Wastage', sub: 'Batches aur wastage', action: 'expiry', section: 'main' },
+  { id: 'suppliers', label: 'Suppliers', sub: 'Supplier aur kharidari', action: 'suppliers', section: 'main' },
+  { id: 'expenses', label: 'Expenses', sub: 'Godown kharcha', action: 'expenses', section: 'main' },
+  { id: 'sale', label: 'Counter Sale', sub: 'Sale counter', action: 'sale', section: 'pos' },
+  { id: 'sales-history', label: 'Sale History', sub: 'SL bills', action: 'sales-history', section: 'pos' },
+  { id: 'shifts', label: 'Shifts', sub: 'Shift aur drawer', action: 'shifts', section: 'pos' },
+  { id: 'sales-summary', label: 'Sales Summary', sub: 'Summary aur breakdown', action: 'sales-summary', section: 'pos' },
+  { id: 'pos-dashboard', label: 'POS Dashboard', sub: 'Din ki sales', action: 'pos-dashboard', section: 'pos' },
+  { id: 'khata', label: 'Khata', sub: 'Udhaar khata', action: 'khata', section: 'pos' },
+  { id: 'staff', label: 'Staff', sub: 'Cashier aur staff', action: 'staff', section: 'pos' },
+  { id: 'pos-settings', label: 'POS Settings', sub: 'POS aur KOT settings', action: 'pos-settings', section: 'pos' },
   { id: 'reports', label: 'Reports', sub: 'Hisaab report', action: 'reports', section: 'other' },
   { id: 'purchases', label: 'Purchases', sub: 'Kharidari', action: 'purchases', section: 'other' },
   { id: 'logins', label: 'Logins', sub: 'Login details', action: 'logins', section: 'other' },
@@ -133,10 +153,12 @@ const NAV = [
 ];
 // Roman Urdu supporting line under the breadcrumb on each screen.
 const SCREEN_SUBS = {
+  'owner-dashboard': 'Counter sales aur warehouse dispatch — alag-alag hisaab',
   dashboard: 'Aaj ka hisaab — kul stock, production aur transfers',
   products: 'Sab items aik hi screen par — kisi item par click karein to uski details khulengi',
   raw: 'Kacha maal — godown stock aur kharid price',
   production: 'Raw material se finish goods tayyar karein',
+  recipes: 'Production recipes — raw material ka hisaab',
   finished: 'Tayyar cheezein — stock, cost aur history',
   warehouse: 'Godown — finish goods ka kul stock',
   transfer: 'Warehouse se kisi bhi branch ko maal bhejein',
@@ -144,6 +166,17 @@ const SCREEN_SUBS = {
   billing: 'Production aur transfer ke bill',
   stockio: 'Maal aaya ya gaya — stock in aur out',
   stock: 'Godown aur har branch ka stock',
+  expiry: 'Expiry batches (FEFO) aur wastage',
+  suppliers: 'Suppliers — supplier-wise kharidari',
+  expenses: 'Godown kharch — head aur raqam',
+  sale: 'Counter sale — item chunein, cart banayein, payment lein',
+  'sales-history': 'Counter sales (SL-…) — bill, void aur delete',
+  shifts: 'Shift start / band karein — drawer aur closing report',
+  'sales-summary': 'Sales summary — payment, order type aur void hisaab',
+  'pos-dashboard': 'Aaj ki counter sales — bills aur totals',
+  khata: 'Udhaar khata — customers, ledger aur adaigi',
+  staff: 'Staff — cashier, rider aur haazri',
+  'pos-settings': 'POS aur KOT settings',
   reports: 'Mahina aur kul hisaab — report',
   purchases: 'Kharidari — invoice aur stock in',
   logins: 'Login details aur PIN badlein',
@@ -208,6 +241,7 @@ const App = {
     this.stopIdleTimer();
     this.user = null;
     this.currentScreen = null;
+    try { document.body.classList.remove('pos-only'); } catch (e) { /* ignore */ }
     const container = document.getElementById('screen');
     if (container) container.innerHTML = '';
     this.notify('Session lock ho gaya — PIN dobara dalein', 'warning');
@@ -388,6 +422,17 @@ const App = {
     product.stock = product.branchStocks.reduce((a, b) => a + (Number(b.qty) || 0), 0);
   },
   adjustStock(product, branchId, delta, reason, ref, clientRef) {
+    // v2.1.0 — Owner gate (Worker E §F): Owner stock change nahi kar
+    // sakta — stock entry Warehouse ka kaam hai. Stock In/Out form
+    // Owner ko dikhti hi nahi (stock.js), is liye ye check belt-and-
+    // braces hai. EXCEPTION: 'Purchase — …' reason wali auto stock-in
+    // — purchase khud Owner ka jaiz kaam hai (purchases.js:139) aur
+    // usay rokne se purchase record ban jata magar stock nahi aata.
+    // Transfer legs Manager karta hai (Owner ko form nahi milta).
+    if (this.user && this.user.role === 'Owner' && String(reason || '').indexOf('Purchase —') !== 0) {
+      this.notify('Issue — Owner stock change nahi kar sakta — stock entry Warehouse ka kaam hai', 'error');
+      return this.stockOf(product, branchId);
+    }
     const bid = this.normBranchId(branchId);
     const next = this.stockOf(product, bid) + Number(delta);
     this.setStock(product, bid, next);
@@ -424,15 +469,36 @@ const App = {
     return (this.state.products || []).filter((p) => this.isLowStock(p, branchId));
   },
 
-  /* ----- roles ----- */
+  /* ----- roles (v2.1.0) ----- */
+  // Owner: sab kuch SIWA un screens ke jo us ke kaam ki nahi —
+  // dashboard (Manager view), production, sale (Counter), recipes,
+  // staff, sales-history, shifts, sales-summary, pos-dashboard,
+  // khata, pos-settings. Owner ka ghar 'owner-dashboard' hai.
+  // Counter Manager: sirf POS screens. Manager: godown daily ops +
+  // recipes/expiry/suppliers/expenses; Reports/Logins/Settings
+  // Owner-only; koi POS screen nahi, koi owner-dashboard nahi.
+  isPosOnlyUser() {
+    return !!(this.user && this.user.isPosOnly);
+  },
+  homeRoute() {
+    if (!this.user) return 'dashboard';
+    if (this.user.role === 'Owner') return 'owner-dashboard';
+    if (this.isPosOnlyUser() || this.user.role === 'Counter Manager') return 'sale';
+    return 'dashboard';
+  },
   can(action) {
     if (!this.user) return false;
     const role = this.user.role;
-    if (role === 'Owner') return true;
+    if (role === 'Owner') {
+      return ['dashboard', 'production', 'sale', 'recipes', 'staff', 'sales-history', 'shifts', 'sales-summary', 'pos-dashboard', 'khata', 'pos-settings'].indexOf(action) === -1;
+    }
     if (OWNER_ONLY.indexOf(action) !== -1) return false;
     if (action === 'theme') return true;
+    if (role === 'Counter Manager' || this.user.isPosOnly) {
+      return ['sale', 'sales-history', 'shifts', 'sales-summary', 'pos-dashboard', 'khata', 'pos-settings', 'staff'].indexOf(action) !== -1;
+    }
     if (role === 'Manager') {
-      return ['dashboard', 'products', 'raw', 'production', 'finished', 'warehouse', 'transfer', 'branches', 'billing', 'stockio', 'stock', 'purchases'].indexOf(action) !== -1;
+      return ['dashboard', 'products', 'raw', 'production', 'finished', 'warehouse', 'transfer', 'branches', 'billing', 'stockio', 'stock', 'purchases', 'recipes', 'expiry', 'suppliers', 'expenses'].indexOf(action) !== -1;
     }
     if (role === 'Warehouse Staff') {
       return ['dashboard', 'products', 'raw', 'production', 'finished', 'warehouse', 'transfer', 'branches', 'stockio', 'stock'].indexOf(action) !== -1;
@@ -463,6 +529,12 @@ const App = {
   /* ----- navigation ----- */
   go(screenName) {
     if (!this.user) { this.renderLogin(); return; }
+    // v2.1.0 — POS-only shell: Counter Manager godown route khole to
+    // sale par redirect (isPosOnly flag se, sirf role string se nahi).
+    if (this.isPosOnlyUser() && POS_ROUTES.indexOf(screenName) === -1 && screenName !== 'theme') {
+      if (screenName !== 'sale') this.notify('Issue — Counter par sirf Sale screen khulti hai', 'error');
+      screenName = 'sale';
+    }
     const nav = NAV.find((n) => n.id === screenName);
     if (nav && nav.action === 'theme') { this.toggleTheme(); return; }
     if (nav && !this.can(nav.action)) {
@@ -478,7 +550,7 @@ const App = {
     const crumb = el('<div class="crumb"><button type="button" class="crumb-home" id="crumb-home">← Sahara Bakers</button><span class="crumb-sep">›</span><span class="crumb-here">' + esc(nav ? nav.label : screenName) + '</span></div>');
     container.appendChild(crumb);
     if (SCREEN_SUBS[screenName]) container.appendChild(el('<div class="screen-sub">' + esc(SCREEN_SUBS[screenName]) + '</div>'));
-    crumb.querySelector('#crumb-home').addEventListener('click', () => this.go('dashboard'));
+    crumb.querySelector('#crumb-home').addEventListener('click', () => this.go(this.homeRoute()));
     const content = el('<div class="screen-content"></div>');
     container.appendChild(content);
     const fn = window.Screens[screenName];
@@ -527,13 +599,21 @@ const App = {
     bodyEl.appendChild(el('<p class="muted">' + esc(product.category || '') + ' · ' + (product.type === 'raw' ? 'Raw Material' : 'Finish Goods') + ' · ' + esc(product.unit || '') + '</p>'));
     const infoRows = [
       ['Sale Price', this.moneyOrDash(product.price)],
-      ['Purchase Price / Cost', this.moneyOrDash(product.purchasePrice)],
+    ];
+    // v2.1.0 — Cost row gating (Worker E §E): Purchase Price / Cost
+    // sirf tab dikhe jab DB.canSeeCost(user) true ho (Owner hamesha;
+    // Manager sirf jab settings.managerCanSeeCost ON ho). Fallback:
+    // DB.canSeeCost na ho to sirf Owner ko dikhe.
+    const canSeeCost = (typeof DB !== 'undefined' && DB.canSeeCost) ? DB.canSeeCost(this.user) : !!(this.user && this.user.role === 'Owner');
+    if (canSeeCost) infoRows.push(['Purchase Price / Cost', this.moneyOrDash(product.purchasePrice)]);
+    infoRows.push(
       ['Details', product.details || '—'],
       ['Low Stock Limit', product.lowThreshold == null ? '—' : String(product.lowThreshold)],
       ['SKU', product.sku || '—'],
       ['Barcode', product.barcode || '—'],
-    ].map((kv) => '<tr><td><b>' + esc(kv[0]) + '</b></td><td>' + esc(kv[1]) + '</td></tr>').join('');
-    bodyEl.appendChild(el('<div class="table-wrap"><table><tbody>' + infoRows + '</tbody></table></div>'));
+    );
+    const infoRowsHtml = infoRows.map((kv) => '<tr><td><b>' + esc(kv[0]) + '</b></td><td>' + esc(kv[1]) + '</td></tr>').join('');
+    bodyEl.appendChild(el('<div class="table-wrap"><table><tbody>' + infoRowsHtml + '</tbody></table></div>'));
     // Stock per location.
     const locs = [{ id: warehouseId, name: 'Warehouse (Godown)' }].concat((this.state.branches || []).map((b) => ({ id: b.id, name: b.name })));
     const stockRows = locs.map((loc) => {
@@ -547,7 +627,9 @@ const App = {
     if (product.type === 'finished') {
       const prods = (this.state.productions || []).filter((pr) => String(pr.finishProductId) === String(product.id)).slice(0, 5);
       if (prods.length > 0) {
-        const rows = prods.map((pr) => '<tr><td><b>' + esc(pr.billNo || '') + '</b></td><td><b>' + pr.finishQty + ' ' + esc(pr.finishUnit || '') + '</b></td><td>' + esc(this.money(pr.totalCost)) + '</td><td class="muted">' + esc(String(pr.date || '').slice(0, 16).replace('T', ' ')) + '</td></tr>').join('');
+        // Production History ki Total Cost bhi cost hai — canSeeCost
+        // false ho to '—' dikhe (Purchase Price row wali hi gating).
+        const rows = prods.map((pr) => '<tr><td><b>' + esc(pr.billNo || '') + '</b></td><td><b>' + pr.finishQty + ' ' + esc(pr.finishUnit || '') + '</b></td><td>' + esc(canSeeCost ? this.money(pr.totalCost) : '—') + '</td><td class="muted">' + esc(String(pr.date || '').slice(0, 16).replace('T', ' ')) + '</td></tr>').join('');
         bodyEl.appendChild(el('<h3 style="margin-top:14px">Production History</h3>'));
         bodyEl.appendChild(el('<div class="table-wrap"><table><thead><tr><th>Bill</th><th>Produced</th><th>Total Cost</th><th>Date</th></tr></thead><tbody>' + rows + '</tbody></table></div>'));
       }
@@ -614,12 +696,23 @@ const App = {
     const nav = document.getElementById('sidebar');
     if (!nav) return;
     nav.innerHTML = '';
+    // v2.1.0 — POS-only shell: the sidebar renders for the Counter
+    // Manager too, but App.can() filters it to ONLY the POS screens
+    // (sale, sales-history, shifts, sales-summary, pos-dashboard,
+    // khata, staff, pos-settings) — no godown item ever renders.
+    // The sidebar is NOT removed outright: no POS screen links to
+    // Khata / Sale History / Summary / POS Dashboard / Staff, so
+    // hiding the whole sidebar would make 6 of the 8 POS screens
+    // unreachable. The header is reduced to name + logout by CSS.
     // Brand at the top of the sidebar (SmartPOS layout).
     nav.appendChild(el('<div class="sidebar-brand"><img src="assets/sahara-logo.png" alt="Sahara Bakers logo" onerror="this.style.display=\'none\'"><div><div class="sidebar-brand-name">SAHARA BAKERS</div><div class="sidebar-brand-sub">Godown Stock</div></div></div>'));
     let currentSection = null;
     const addSectionLabel = (label) => {
       nav.appendChild(el('<div class="sidebar-section-label">' + esc(label) + '</div>'));
     };
+    // v2.1.0 — 'pos' section ka label 'POS' hai (pehle har
+    // non-'other' section 'Main' likha jata tha).
+    const sectionLabel = (section) => (section === 'other' ? 'Other' : (section === 'pos' ? 'POS' : 'Main'));
     NAV.forEach((item) => {
       // The theme toggle is a sidebar action, not a screen — it shows
       // for every logged-in user.
@@ -634,7 +727,7 @@ const App = {
       if (!this.user) return;
       if (!this.can(item.action)) return; // hide nav items the role cannot use
       const section = item.section || 'main';
-      if (section !== currentSection) { addSectionLabel(section === 'other' ? 'Other' : 'Main'); currentSection = section; }
+      if (section !== currentSection) { addSectionLabel(sectionLabel(section)); currentSection = section; }
       const btn = el('<button type="button" class="nav-item' + (this.currentScreen === item.id ? ' active' : '') + '"><span class="nav-label">' + esc(item.label) + '</span>' + (item.sub ? '<span class="nav-sub">' + esc(item.sub) + '</span>' : '') + '</button>');
       btn.addEventListener('click', () => this.go(item.id));
       nav.appendChild(btn);
@@ -682,8 +775,13 @@ const App = {
     if (loginCard) loginCard.classList.add('select-mode');
     const cards = el('<div class="login-cards" id="login-cards"></div>');
     allUsers.forEach((u) => {
+      // v2.1.0 — card par display name (user.name) bara aur role
+      // chhota: Owner "Rahmanullah", Manager "Warehouse", Counter
+      // Manager "Counter Manager". Username data-attribute mein rehta
+      // hai (lockout username-keyed hai — username kabhi mat badlo).
       const card = el('<button type="button" class="btn login-role-card" data-username="' + esc(u.username || '') + '">' +
-        '<span class="login-role-name">' + esc(u.role) + '</span></button>');
+        '<span class="login-role-name">' + esc(u.name || u.role) + '</span>' +
+        '<span class="login-role-sub">' + esc(u.role) + '</span></button>');
       card.addEventListener('click', () => this.renderPinPage(u));
       cards.appendChild(card);
     });
@@ -842,6 +940,11 @@ const App = {
     this._lockedUser = null;
     this._branchId = user.role === 'Owner' ? (this.state.settings.defaultBranchId || null) : (user.branchId || null);
     this._selectedLoginUser = null;
+    // v2.1.0 — POS-only shell: Counter Manager ke liye body par
+    // 'pos-only' class — CSS header controls chhupata hai (sirf naam
+    // + logout wali top bar rehti hai); sidebar mein sirf POS
+    // screens aate hain (renderSidebar + can() filter).
+    try { document.body.classList.toggle('pos-only', this.isPosOnlyUser()); } catch (e) { /* ignore */ }
     this.showShell(true);
     this.renderHeader();
     this.renderSidebar();
@@ -859,7 +962,9 @@ const App = {
         }
       }
     } catch (e) { /* backup failure must never block login */ }
-    this.go('dashboard');
+    // v2.1.0 — Login redirect: Owner → owner-dashboard, Counter
+    // Manager / POS-only → seedha dark Sale screen, baqi → dashboard.
+    this.go(this.homeRoute());
   },
 
   logout() {
@@ -867,6 +972,7 @@ const App = {
     this._lockedUser = null;
     this.user = null;
     this.currentScreen = null;
+    try { document.body.classList.remove('pos-only'); } catch (e) { /* ignore */ }
     const container = document.getElementById('screen');
     if (container) container.innerHTML = '';
     this.renderLogin();

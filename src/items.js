@@ -17,6 +17,10 @@ function money(n) { return window.App.money(n); }
 function notify(m, t) { window.App.notify(m, t); }
 function esc(s) { return window.esc(s); }
 function el(html) { return window.el(html); }
+// v2.1.0 — cost gating helper (Owner hamesha; Manager kabhi nahi —
+// is screen par cost dikhayi hi nahi jati, sirf form gating ke
+// liye).
+function isOwner() { return !!(window.App.user && window.App.user.role === 'Owner'); }
 
 let currentType = 'raw';
 let currentQuery = '';
@@ -105,7 +109,9 @@ function renderItems(container) {
     const catIn = el('<input class="input" type="text" value="' + esc(prod.category || '') + '" placeholder="Category (jaise Flour, Mithai)">');
     const unitSel = el('<select class="input">' + ['Kg', 'Liter', 'Pieces'].map((u) => '<option value="' + u + '"' + (prod.unit === u ? ' selected' : '') + '>' + u + '</option>').join('') + '</select>');
     const priceIn = el('<input class="input" type="number" min="0" step="0.01" value="' + (prod.price != null ? esc(prod.price) : '') + '" placeholder="Sale price (blank chhod sakte hain)">');
-    const purchIn = el('<input class="input" type="number" min="0" step="0.01" value="' + (prod.purchasePrice != null ? esc(prod.purchasePrice) : '') + '" placeholder="Purchase price (blank chhod sakte hain)">');
+    // v2.1.0 — Purchase Price field sirf Owner ko dikhe. Non-Owner
+    // ko form mein cost field milta hi nahi.
+    const purchIn = isOwner() ? el('<input class="input" type="number" min="0" step="0.01" value="' + (prod.purchasePrice != null ? esc(prod.purchasePrice) : '') + '" placeholder="Purchase price (blank chhod sakte hain)">') : null;
     const lowIn = el('<input class="input" type="number" min="0" step="1" value="' + (prod.lowThreshold != null ? esc(prod.lowThreshold) : '') + '" placeholder="Low stock limit (blank = default)">');
     const skuIn = el('<input class="input" type="text" value="' + esc(prod.sku || '') + '" placeholder="SKU (optional)">');
     const barcodeIn = el('<input class="input" type="text" value="' + esc(prod.barcode || '') + '" placeholder="Barcode (optional)">');
@@ -114,10 +120,15 @@ function renderItems(container) {
     form.appendChild(el('<label>Category</label>')); form.appendChild(catIn);
     form.appendChild(el('<label>Unit</label>')); form.appendChild(unitSel);
     form.appendChild(el('<label>Sale Price (Rs)</label>')); form.appendChild(priceIn);
-    form.appendChild(el('<label>Purchase Price (Rs)</label>')); form.appendChild(purchIn);
+    if (isOwner()) { form.appendChild(el('<label>Purchase Price (Rs)</label>')); form.appendChild(purchIn); }
     form.appendChild(el('<label>Low Stock Limit</label>')); form.appendChild(lowIn);
     form.appendChild(el('<label>SKU</label>')); form.appendChild(skuIn);
     form.appendChild(el('<label>Barcode</label>')); form.appendChild(barcodeIn);
+    // v2.1.0 — Owner ke liye maujooda item edit karte waqt Cost
+    // Price ke ilawa SAB fields read-only/disabled hain.
+    if (isOwner() && !isNew) {
+      [nameIn, typeSel, catIn, unitSel, priceIn, lowIn, skuIn, barcodeIn].forEach((inp) => { inp.disabled = true; });
+    }
     const row = el('<div class="form-actions"></div>');
     const saveBtn = el('<button type="submit" class="btn btn-primary">Save Karein</button>');
     const delBtn = !isNew ? el('<button type="button" class="btn btn-danger">Delete Karein</button>') : null;
@@ -130,28 +141,47 @@ function renderItems(container) {
       e.preventDefault();
       const name = nameIn.value.trim();
       if (!name) { notify('Issue — Item ka naam zaroori hai', 'error'); return; }
+      // v2.1.0 — cost gating: purchasePrice kabhi is form ke rec
+      // mein nahi jata. Owner ki cost sirf DB.setItemCostPrice se
+      // badalti hai; Manager ki edit central DB.updateItem se save
+      // hoti hai (jo purchasePrice/costPrice patch se khud drop
+      // karta hai).
       const rec = {
         name, type: typeSel.value, category: catIn.value.trim(),
         unit: unitSel.value,
         price: priceIn.value === '' ? null : Number(priceIn.value),
-        purchasePrice: purchIn.value === '' ? null : Number(purchIn.value),
         lowThreshold: lowIn.value === '' ? null : Number(lowIn.value),
         sku: skuIn.value.trim() || null,
         barcode: barcodeIn.value.trim() || null,
       };
-      if (DB.checkUniqueness) {
-        const chk = DB.checkUniqueness('products', rec, isNew ? null : prod.id);
-        if (!chk.ok) { notify('Issue — ' + chk.message, 'error'); return; }
-      }
       if (isNew) {
-        const np = Object.assign({ id: DB.nextId('products'), status: 'active', image: '', stock: 0, branchStocks: (S().branches || []).map((b) => ({ branchId: b.id, qty: 0 })) }, rec);
+        if (DB.checkUniqueness) {
+          const chk = DB.checkUniqueness('products', rec, null);
+          if (!chk.ok) { notify('Issue — ' + chk.message, 'error'); return; }
+        }
+        const np = Object.assign({ id: DB.nextId('products'), status: 'active', image: '', purchasePrice: null, stock: 0, branchStocks: (S().branches || []).map((b) => ({ branchId: b.id, qty: 0 })) }, rec);
         S().products.push(np);
+        if (isOwner() && purchIn && purchIn.value !== '') {
+          const cRes = DB.setItemCostPrice ? DB.setItemCostPrice(np.id, Number(purchIn.value), window.App.user) : { ok: false, message: 'Cost price set nahi ho saki' };
+          if (!cRes.ok) notify('Issue — ' + (cRes.message || 'Cost price set nahi ho saki'), 'error');
+        }
         window.App.save();
         closeForm();
         notify('Ho Gaya ✓ — Item add ho gaya: ' + name, 'success');
         renderItems(container);
+      } else if (isOwner()) {
+        // Owner edit: sirf Cost Price editable hai — baqi fields
+        // disabled hain, is liye yahan sirf cost save hoti hai.
+        const cRes = DB.setItemCostPrice ? DB.setItemCostPrice(prod.id, purchIn.value === '' ? null : Number(purchIn.value), window.App.user) : { ok: false, message: 'Cost price set nahi ho saki' };
+        if (!cRes.ok) { notify('Issue — ' + (cRes.message || 'Cost price set nahi ho saki'), 'error'); return; }
+        window.App.save();
+        closeForm();
+        notify('Ho Gaya ✓ — Cost price update ho gaya: ' + (prod.name || ''), 'success');
+        renderItems(container);
       } else {
-        Object.assign(prod, rec);
+        const patch = { name, type: typeSel.value, category: catIn.value.trim(), unit: unitSel.value, price: rec.price, lowThreshold: rec.lowThreshold, sku: rec.sku, barcode: rec.barcode };
+        const res = DB.updateItem ? DB.updateItem(prod.id, patch, window.App.user) : { ok: true };
+        if (!res.ok) { notify('Issue — ' + (res.message || 'Item update nahi ho saka'), 'error'); return; }
         window.App.save();
         closeForm();
         notify('Ho Gaya ✓ — Item update ho gaya: ' + name, 'success');

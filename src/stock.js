@@ -46,7 +46,45 @@ function renderStockIO(container) {
   const wrap = el('<div></div>');
   wrap.appendChild(el('<div class="screen-head"><h1>Stock In / Out</h1></div>'));
 
-  const card = el('<div class="card"><h2>Stock Entry</h2></div>');
+  // v2.1.0 — Owner gate: Owner Stock In/Out + Adjustment nahi kar
+  // sakta (App.adjustStock mein Owner-check hai — DB layer mein koi
+  // role check nahi, gate UI-level hai) — form chhupa di jati hai; neeche Recent Stock Movement
+  // history read-only rehti hai. Stock screen (levels) alag se
+  // readable rehti hai.
+  const isOwner = !!(window.App.user && window.App.user.role === 'Owner');
+  let formCtl = null;
+  if (isOwner) {
+    wrap.appendChild(el('<div class="card"><h2>Stock In / Out — Read-Only</h2><p class="muted">Owner stock in/out nahi kar sakta — stock entry Warehouse ka kaam hai. Aap neeche recent stock movements dekh sakte hain.</p></div>'));
+  } else {
+    const card = el('<div class="card"><h2>Stock Entry</h2></div>');
+    formCtl = renderStockIOForm(card, pendingId, products, branches);
+    wrap.appendChild(card);
+  }
+
+  // Recent movements (latest first, max 15).
+  const moves = (S().stockMovements || []).slice().sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))).slice(0, 15);
+  const hist = el('<div class="card"><h2>Recent Stock Movement</h2></div>');
+  if (moves.length === 0) hist.appendChild(el('<p class="muted">Abhi tak koi stock movement nahi hai.</p>'));
+  else {
+    const rows = moves.map((m) => {
+      const q = Number(m.qty) || 0;
+      return '<tr><td>' + esc(m.productName || '') + '</td><td>' + (q > 0 ? 'Aaya' : 'Gaya') + '</td><td><b>' + Math.abs(q) + '</b></td><td>' + esc(window.App.branchName(m.branchId)) + '</td><td>' + esc(m.reason || '') + '</td><td class="muted">' + esc(String(m.date || '').slice(0, 16).replace('T', ' ')) + '</td></tr>';
+    }).join('');
+    hist.appendChild(el('<div class="table-wrap"><table><thead><tr><th>Item</th><th>Type</th><th>Miqdaar</th><th>Branch</th><th>Wajah</th><th>Date</th></tr></thead><tbody>' + rows + '</tbody></table></div>'));
+  }
+  wrap.appendChild(hist);
+
+  container.appendChild(wrap);
+  if (formCtl) {
+    formCtl.updatePreview();
+    if (pendingId) { try { formCtl.qtyIn.focus(); } catch (e) { /* ignore */ } }
+  }
+}
+// v2.1.0 — Stock Entry form, renderStockIO se alag kiya gaya taake
+// Owner gate par form chhupaya ja sake aur history read-only rahe.
+// (Pehle ye code renderStockIO ke andar inline tha; behaviour waisa
+// hi hai — sirf updatePreview/qtyIn wapas diye jate hain.)
+function renderStockIOForm(card, pendingId, products, branches) {
   const form = el('<form></form>');
   const itemSel = el('<select class="input" id="sio-item">' + productOptions(pendingId || (products[0] && products[0].id)) + '</select>');
   const qtyIn = el('<input class="input" type="number" min="0" step="any" required placeholder="Quantity (jaise 5)">');
@@ -76,7 +114,6 @@ function renderStockIO(container) {
   form.appendChild(el('<div class="form-actions"><button type="submit" class="btn btn-primary btn-block">Save</button></div>'));
   form.appendChild(confirmBox);
   card.appendChild(form);
-  wrap.appendChild(card);
 
   function updatePreview() {
     const p = (S().products || []).find((x) => String(x.id) === String(itemSel.value));
@@ -125,22 +162,7 @@ function renderStockIO(container) {
     updatePreview();
   });
 
-  // Recent movements (latest first, max 15).
-  const moves = (S().stockMovements || []).slice().sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))).slice(0, 15);
-  const hist = el('<div class="card"><h2>Recent Stock Movement</h2></div>');
-  if (moves.length === 0) hist.appendChild(el('<p class="muted">Abhi tak koi stock movement nahi hai.</p>'));
-  else {
-    const rows = moves.map((m) => {
-      const q = Number(m.qty) || 0;
-      return '<tr><td>' + esc(m.productName || '') + '</td><td>' + (q > 0 ? 'Aaya' : 'Gaya') + '</td><td><b>' + Math.abs(q) + '</b></td><td>' + esc(window.App.branchName(m.branchId)) + '</td><td>' + esc(m.reason || '') + '</td><td class="muted">' + esc(String(m.date || '').slice(0, 16).replace('T', ' ')) + '</td></tr>';
-    }).join('');
-    hist.appendChild(el('<div class="table-wrap"><table><thead><tr><th>Item</th><th>Type</th><th>Miqdaar</th><th>Branch</th><th>Wajah</th><th>Date</th></tr></thead><tbody>' + rows + '</tbody></table></div>'));
-  }
-  wrap.appendChild(hist);
-
-  container.appendChild(wrap);
-  updatePreview();
-  if (pendingId) { try { qtyIn.focus(); } catch (e) { /* ignore */ } }
+  return { updatePreview, qtyIn };
 }
 
 function renderStock(container) {

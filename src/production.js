@@ -31,6 +31,13 @@ function fmtDate(iso) {
     return d.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   } catch (e) { return String(iso || '—'); }
 }
+// v2.1.0 — cost gating for the raw list's per-item cost line:
+// DB.canSeeCost(currentUser) — Owner hamesha, Manager sirf jab
+// Owner ne settings.managerCanSeeCost ON kiya ho.
+function canSeeCost() {
+  if (DB.canSeeCost) return DB.canSeeCost(window.App.user);
+  return !!(window.App.user && window.App.user.role === 'Owner');
+}
 function productionBillNo(p) { return 'PB-' + String(p.id == null ? '' : p.id).padStart(4, '0'); }
 
 function productionBillHtml(production) {
@@ -113,10 +120,55 @@ function renderProduction(container) {
   const finishQty = el('<input id="prod-finish-qty" class="input" type="number" min="0" step="any" placeholder="Bani hui miqdaar (jaise 80)">');
   finishRow.appendChild(finishSel); finishRow.appendChild(finishQty);
   cartCard.appendChild(el('<label>Finish Item</label>')); cartCard.appendChild(finishRow);
+  // v2.1.0 — Recipe picker (Worker F: src/recipes.js).
+  const recipeRow = el('<div class="form-row"></div>');
+  const recipeSel = el('<select id="prod-recipe-sel" class="input"></select>');
+  const recipeBtn = el('<button type="button" class="btn" id="prod-recipe-load">Recipe se Cart Bharein</button>');
+  recipeRow.appendChild(recipeSel); recipeRow.appendChild(recipeBtn);
+  cartCard.appendChild(el('<label>Recipe (optional)</label>')); cartCard.appendChild(recipeRow);
+  let recipeIdInUse = null;
+  function recipesApi() {
+    const R = window.Screens && window.Screens.Recipes;
+    return (R && typeof R.listForProduction === 'function' && typeof R.recipeLinesForProduction === 'function') ? R : null;
+  }
+  function drawRecipeOptions() {
+    const R = recipesApi();
+    const list = R ? R.listForProduction(finishSel.value) : [];
+    recipeSel.innerHTML = list.length === 0
+      ? '<option value="">Is finish item ki koi recipe nahi</option>'
+      : list.map((r) => '<option value="' + esc(r.recipeId) + '">' + esc(r.name) + ' (' + r.lines.length + ' lines)</option>').join('');
+    recipeSel.disabled = list.length === 0;
+    recipeBtn.disabled = list.length === 0;
+  }
+  finishSel.addEventListener('change', () => { recipeIdInUse = null; drawRecipeOptions(); });
+  recipeBtn.addEventListener('click', () => {
+    const R = recipesApi();
+    if (!R) { notify('Issue — Recipe nahi mili', 'error'); return; }
+    const picked = (typeof R.loadForProduction === 'function') ? R.loadForProduction(finishSel.value) : null;
+    const chosenId = recipeSel.value || (picked && picked.recipeId);
+    const lines = R.recipeLinesForProduction(chosenId);
+    if (!lines) { notify('Issue — Recipe nahi mili', 'error'); return; }
+    cart.length = 0;
+    lines.forEach((l) => cart.push({ productId: l.productId, qty: l.qty }));
+    recipeIdInUse = Number(chosenId);
+    drawCart();
+    drawRawList(searchRow.querySelector('#prod-search').value);
+    notify('Ho Gaya ✓ — Recipe se cart bhar gaya (' + lines.length + ' lines)', 'success');
+  });
+  drawRecipeOptions();
   const completeBtn = el('<button type="button" class="btn btn-primary btn-block" id="prod-complete-btn">Complete Production &amp; View Bill</button>');
   cartCard.appendChild(completeBtn);
   layout.appendChild(cartCard);
-  wrap.appendChild(layout);
+  // v2.1.0 — Owner block: Owner production nahi kar sakta (frozen
+  // DB.completeProduction bhi reject karta hai) — create UI (raw
+  // list + cart) Owner ko dikhai hi nahi deti; sirf Roman Urdu
+  // notice aur neeche Production History (read-only) rehti hai.
+  const isOwner = !!(window.App.user && window.App.user.role === 'Owner');
+  if (isOwner) {
+    wrap.appendChild(el('<div class="card"><h2>Production — Sirf Warehouse ka kaam</h2><p class="muted">Owner production nahi kar sakta — production Warehouse ka kaam hai. Aap neeche Production History aur bills dekh sakte hain.</p></div>'));
+  } else {
+    wrap.appendChild(layout);
+  }
 
   function drawRawList(q) {
     rawList.innerHTML = '';
@@ -126,7 +178,7 @@ function renderProduction(container) {
     const rows = list.map((p) => {
       const avail = window.App.stockOf(p, warehouseId);
       const inCart = cart.find((c) => String(c.productId) === String(p.id));
-      return '<tr data-id="' + esc(p.id) + '"><td><b>' + esc(p.name) + '</b><br><span class="muted">' + esc(p.unit || '') + ' · ' + (p.purchasePrice != null ? 'Cost ' + esc(window.App.money(p.purchasePrice)) : 'Cost blank') + '</span></td>' +
+      return '<tr data-id="' + esc(p.id) + '"><td><b>' + esc(p.name) + '</b><br><span class="muted">' + esc(p.unit || '') + (canSeeCost() ? ' · ' + (p.purchasePrice != null ? 'Cost ' + esc(window.App.money(p.purchasePrice)) : 'Cost blank') : '') + '</span></td>' +
         '<td>Available: <b>' + avail + '</b></td>' +
         '<td><input class="input prod-cart-qty" data-id="' + esc(p.id) + '" type="number" min="0" step="any" placeholder="Qty" value="' + (inCart ? inCart.qty : '') + '" style="max-width:110px"></td>' +
         '<td><button type="button" class="btn btn-sm prod-add-cart" data-id="' + esc(p.id) + '">' + (inCart ? 'Update' : '+ Cart') + '</button></td></tr>';
@@ -175,23 +227,50 @@ function renderProduction(container) {
   completeBtn.addEventListener('click', () => {
     const finishId = finishSel.value;
     const fQty = Number(finishQty.value);
-    if (cart.length === 0) { notify('Issue — Pehle cart mein kam az kam aik raw item add karein', 'error'); return; }
+    // Recipe fallback: cart khaali ho aur recipe chuni ho to DB recipe
+    // lines use kare (db.js completeProduction: lines empty + recipeId
+    // → recipe lines; quantities per-batch as stored, finishQty se
+    // scale NAHI hoti).
+    if (cart.length === 0 && !recipeIdInUse) { notify('Issue — Pehle cart mein kam az kam aik raw item add karein ya recipe chunein', 'error'); return; }
     if (!fQty || fQty <= 0) { notify('Issue — Bani hui miqdaar durust likhein', 'error'); return; }
     const finish = finishes.find((x) => String(x.id) === String(finishId));
     if (!finish) { notify('Issue — Pehle finish item chunein', 'error'); return; }
+    // v2.1.0 — FEFO pre-check (DB.completeProduction does NOT do FEFO
+    // itself): reject before anything moves if fresh (non-expired)
+    // batch stock is short. Raw is consumed at the Warehouse.
+    // EFFECTIVE lines: cart lines, or recipe lines when the cart is
+    // empty and a recipe is chosen (F's fallback).
+    const fefoPicks = [];
+    const fefoLines = cart.length > 0 ? cart : (recipeIdInUse ? ((recipesApi() && recipesApi().recipeLinesForProduction(recipeIdInUse)) || []) : []);
+    for (const c of fefoLines) {
+      const raw = raws.find((x) => String(x.id) === String(c.productId));
+      if (!raw || !raw.expiryTracked) continue;
+      const fefo = DB.fefoPick(raw.id, warehouseId, c.qty);
+      if (!fefo.ok) { notify('Issue — ' + fefo.message, 'error'); return; }
+      fefoPicks.push(...fefo.picks);
+    }
     const clientRef = 'prod-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
     const res = DB.completeProduction ? DB.completeProduction({
       finishProductId: finish.id, finishQty: fQty,
       lines: cart.map((c) => ({ productId: c.productId, qty: c.qty })),
+      recipeId: cart.length === 0 ? recipeIdInUse : null,
       createdBy: window.App.user ? window.App.user.name : '',
+      // v2.1.0 — user pass karna zaroori hai taake frozen DB ka
+      // Owner gate (completeProduction) fire ho sake.
+      user: window.App.user,
       clientRef, warehouseBranchId: warehouseId,
     }) : { ok: false, message: 'Production available nahi hai' };
     if (!res.ok) {
       notify('Issue — ' + (res.message || 'Production nahi ho saki'), 'error');
       return;
     }
+    // v2.1.0 — FEFO consume (only on a real success, never on a
+    // clientRef duplicate — the original run already consumed).
+    // (Coordinator-blessed: DB._consumeBatches.)
+    if (!res.duplicate && DB._consumeBatches) DB._consumeBatches(fefoPicks);
     window.App.save();
     cart.length = 0;
+    recipeIdInUse = null;
     finishQty.value = '';
     drawCart();
     drawRawList('');
